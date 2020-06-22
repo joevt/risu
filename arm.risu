@@ -757,7 +757,7 @@ VLDM A1c cond:4 110 p u d 1 1 rn:4 vd:4 101 x imm:8 !constraints { $p == $u; }
 VSTR A1a cond:4 1101 1 d 00 rn:4 vd:4 101 x imm:8 \
  !memory { reg_plus_imm($rn, $imm * 4); }
 # both A1 and A2 encodings, U = 0
-VSTR A1b cond:4 1101 1 d 00 rn:4 vd:4 101 x imm:8 \
+VSTR A1b cond:4 1101 0 d 00 rn:4 vd:4 101 x imm:8 \
  !memory { reg_minus_imm($rn, $imm * 4); }
 
 # VLDR
@@ -765,7 +765,7 @@ VSTR A1b cond:4 1101 1 d 00 rn:4 vd:4 101 x imm:8 \
 VLDR A1a cond:4 1101 1 d 01 rn:4 vd:4 101 x imm:8 \
  !memory { reg_plus_imm($rn, $imm * 4); }
 # both A1 and A2 encodings, U = 0
-VLDR A1b cond:4 1101 1 d 01 rn:4 vd:4 101 x imm:8 \
+VLDR A1b cond:4 1101 0 d 01 rn:4 vd:4 101 x imm:8 \
  !memory { reg_minus_imm($rn, $imm * 4); }
 
 ########### Extension register transfer ###################
