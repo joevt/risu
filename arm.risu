@@ -669,7 +669,7 @@ VABS A2 cond:4 11101 d 11 0000 vd:4 101 sz 1 1 m 0 vm:4
 VNEG A2 cond:4 11101 d 11 0001 vd:4 101 sz 0 1 m 0 vm:4
 VSQRT A1 cond:4 11101 d 11 0001 vd:4 101 sz 1 1 m 0 vm:4
 # VCVTB, VCVTT (A8.6.300) [requires half-precision extension]
-VCTV_B_TT A1 cond:4 1110 1 d 11 001 op vd:4 101 0 t 1 m 0 vm:4
+VCVT_B_TT A1 cond:4 1110 1 d 11 001 op vd:4 101 0 t 1 m 0 vm:4
 VCMP A1 cond:4 11101 d 11 0100 vd:4 101 sz e 1 m 0 vm:4
 VCMP A2 cond:4 11101 d 11 0101 vd:4 101 sz e 1 0 0 0000
 
