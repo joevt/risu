@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <errno.h>
 #include <sys/prctl.h>
 
 #include "risu.h"
@@ -37,8 +38,6 @@ const char * const arch_extra_help
 
 void process_arch_opt(int opt, const char *arg)
 {
-    long want, got;
-
     assert(opt == FIRST_ARCH_OPT);
     test_sve = strtol(arg, 0, 10);
 
@@ -46,16 +45,26 @@ void process_arch_opt(int opt, const char *arg)
         fprintf(stderr, "Invalid value for VQ (1-%d)\n", SVE_VQ_MAX);
         exit(EXIT_FAILURE);
     }
-    want = sve_vl_from_vq(test_sve);
-    got = prctl(PR_SVE_SET_VL, want);
-    if (want != got) {
-        if (got < 0) {
-            perror("prctl PR_SVE_SET_VL");
-        } else {
-            fprintf(stderr, "Unsupported value for VQ (%d != %d)\n",
-                    test_sve, (int)sve_vq_from_vl(got));
+}
+
+void arch_init(void)
+{
+    long want, got;
+
+    if (test_sve) {
+        want = sve_vl_from_vq(test_sve);
+        got = prctl(PR_SVE_SET_VL, want);
+        if (want != got) {
+            if (got >= 0) {
+                fprintf(stderr, "Unsupported VQ for SVE (%d != %d)\n",
+                        test_sve, (int)sve_vq_from_vl(got));
+            } else if (errno == EINVAL) {
+                fprintf(stderr, "System does not support SVE\n");
+            } else {
+                perror("prctl PR_SVE_SET_VL");
+            }
+            exit(EXIT_FAILURE);
         }
-        exit(EXIT_FAILURE);
     }
 }
 
