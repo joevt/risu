@@ -24,11 +24,6 @@
 #include "risu.h"
 #include "risu_reginfo_aarch64.h"
 
-#ifndef SVE_MAGIC
-const struct option * const arch_long_opts;
-const char * const arch_extra_help;
-#else
-
 /* Should we test SVE register state */
 static int test_sve;
 static const struct option extra_opts[] = {
@@ -39,11 +34,9 @@ static const struct option extra_opts[] = {
 const struct option * const arch_long_opts = &extra_opts[0];
 const char * const arch_extra_help
     = "  --test-sve=<vq>        Compare SVE registers with VQ\n";
-#endif
 
 void process_arch_opt(int opt, const char *arg)
 {
-#ifdef SVE_MAGIC
     long want, got;
 
     assert(opt == FIRST_ARCH_OPT);
@@ -64,19 +57,14 @@ void process_arch_opt(int opt, const char *arg)
         }
         exit(EXIT_FAILURE);
     }
-#else
-    abort();
-#endif
 }
 
 int reginfo_size(struct reginfo *ri)
 {
     int size = offsetof(struct reginfo, simd.end);
-#ifdef SVE_MAGIC
     if (test_sve) {
         size = offsetof(struct reginfo, sve.end);
     }
-#endif
     return size;
 }
 
@@ -86,9 +74,7 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc)
     int i;
     struct _aarch64_ctx *ctx, *extra = NULL;
     struct fpsimd_context *fp = NULL;
-#ifdef SVE_MAGIC
     struct sve_context *sve = NULL;
-#endif
 
     /* necessary to be able to compare with memcmp later */
     memset(ri, 0, sizeof(*ri));
@@ -110,14 +96,12 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc)
         case FPSIMD_MAGIC:
             fp = (void *)ctx;
             break;
-#ifdef SVE_MAGIC
         case SVE_MAGIC:
             sve = (void *)ctx;
             break;
         case EXTRA_MAGIC:
             extra = (void *)((struct extra_context *)(ctx))->datap;
             break;
-#endif
         case 0:
             /* End of list.  */
             ctx = extra;
@@ -137,7 +121,6 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc)
     ri->fpsr = fp->fpsr;
     ri->fpcr = fp->fpcr;
 
-#ifdef SVE_MAGIC
     if (test_sve) {
         int vq = test_sve;
 
@@ -184,7 +167,6 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc)
 
         return;
     }
-#endif /* SVE_MAGIC */
 
     for (i = 0; i < 32; i++) {
         ri->simd.vregs[i] = fp->vregs[i];
@@ -197,7 +179,6 @@ int reginfo_is_eq(struct reginfo *r1, struct reginfo *r2)
     return memcmp(r1, r2, reginfo_size(r1)) == 0;
 }
 
-#ifdef SVE_MAGIC
 static int sve_zreg_is_eq(int vq, const void *z1, const void *z2)
 {
     return memcmp(z1, z2, vq * 16) == 0;
@@ -241,7 +222,6 @@ static void sve_dump_zreg_diff(FILE *f, int vq, const __uint128_t *z1,
         }
     }
 }
-#endif
 
 /* reginfo_dump: print state to a stream, returns nonzero on success */
 int reginfo_dump(struct reginfo *ri, FILE * f)
@@ -259,7 +239,6 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
     fprintf(f, "  fpsr   : %08x\n", ri->fpsr);
     fprintf(f, "  fpcr   : %08x\n", ri->fpcr);
 
-#ifdef SVE_MAGIC
     if (test_sve) {
         int q, vq = test_sve;
 
@@ -287,7 +266,6 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
 
         return !ferror(f);
     }
-#endif
 
     for (i = 0; i < 32; i++) {
         fprintf(f, "  V%-2d    : %016" PRIx64 "%016" PRIx64 "\n", i,
@@ -336,7 +314,6 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE * f)
         fprintf(f, "  fpcr   : %08x vs %08x\n", m->fpcr, a->fpcr);
     }
 
-#ifdef SVE_MAGIC
     if (test_sve) {
         int vq = sve_vq_from_vl(m->sve.vl);
 
@@ -365,7 +342,6 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE * f)
 
         return !ferror(f);
     }
-#endif
 
     for (i = 0; i < 32; i++) {
         if (m->simd.vregs[i] != a->simd.vregs[i]) {

@@ -20,7 +20,6 @@ struct simd_reginfo {
     char end[0];
 };
 
-#ifdef SVE_MAGIC
 struct sve_reginfo {
     /* SVE */
     uint16_t    vl; /* current VL */
@@ -29,7 +28,6 @@ struct sve_reginfo {
     uint16_t    ffr[SVE_VQ_MAX];
     char end[0];
 };
-#endif
 
 /* The kernel headers set this based on future arch extensions.
    The current arch maximum is 16.  Save space below.  */
@@ -50,9 +48,7 @@ struct reginfo {
 
     union {
         struct simd_reginfo simd;
-#ifdef SVE_MAGIC
         struct sve_reginfo sve;
-#endif
     };
 };
 
