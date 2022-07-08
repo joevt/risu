@@ -13,26 +13,16 @@
 #ifndef RISU_REGINFO_AARCH64_H
 #define RISU_REGINFO_AARCH64_H
 
-#include <signal.h> /* for SVE_MAGIC */
-
-struct simd_reginfo {
-    __uint128_t vregs[32];
-    char end[0];
-};
-
-struct sve_reginfo {
-    /* SVE */
-    uint16_t    vl; /* current VL */
-    __uint128_t zregs[SVE_NUM_ZREGS][SVE_VQ_MAX];
-    uint16_t    pregs[SVE_NUM_PREGS][SVE_VQ_MAX];
-    uint16_t    ffr[SVE_VQ_MAX];
-    char end[0];
-};
+#include <signal.h>
 
 /* The kernel headers set this based on future arch extensions.
    The current arch maximum is 16.  Save space below.  */
 #undef SVE_VQ_MAX
 #define SVE_VQ_MAX 16
+
+#define ROUND_UP(SIZE, POW2)    (((SIZE) + (POW2) - 1) & -(POW2))
+#define RISU_SVE_REGS_SIZE(VQ)  ROUND_UP(SVE_SIG_REGS_SIZE(VQ), 16)
+#define RISU_SIMD_REGS_SIZE     (32 * 16)
 
 struct reginfo {
     uint64_t fault_address;
@@ -45,11 +35,28 @@ struct reginfo {
     /* FP/SIMD */
     uint32_t fpsr;
     uint32_t fpcr;
+    uint16_t sve_vl;
+    uint16_t reserved;
 
-    union {
-        struct simd_reginfo simd;
-        struct sve_reginfo sve;
-    };
+    char extra[RISU_SVE_REGS_SIZE(SVE_VQ_MAX)]
+        __attribute__((aligned(16)));
 };
+
+static inline uint64_t *reginfo_vreg(struct reginfo *ri, int i)
+{
+    return (uint64_t *)&ri->extra[i * 16];
+}
+
+static inline uint64_t *reginfo_zreg(struct reginfo *ri, int vq, int i)
+{
+    return (uint64_t *)&ri->extra[SVE_SIG_ZREG_OFFSET(vq, i) -
+                                  SVE_SIG_REGS_OFFSET];
+}
+
+static inline uint16_t *reginfo_preg(struct reginfo *ri, int vq, int i)
+{
+    return (uint16_t *)&ri->extra[SVE_SIG_PREG_OFFSET(vq, i) -
+                                  SVE_SIG_REGS_OFFSET];
+}
 
 #endif /* RISU_REGINFO_AARCH64_H */
