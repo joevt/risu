@@ -43,7 +43,7 @@ my @pattern_re = ();            # include pattern
 my @not_pattern_re = ();        # exclude pattern
 
 # Valid block names (keys in blocks hash)
-my %valid_blockname = ( constraints => 1, memory => 1 );
+my %valid_blockname = ( constraints => 1, memory => 1, safefloat =>1 );
 
 sub parse_risu_directive($$@)
 {

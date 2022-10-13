@@ -66,6 +66,21 @@ sub set_reg_w($)
     return $reg;
 }
 
+sub nanbox_s($)
+{
+    my ($fpreg)=@_;
+
+    # Set $fpreg register high 32bit ffffffff
+    # use r1 as a temp register
+    # r1 = r1 | ~(r0)
+    write_mov_ri(1, -1);
+
+    # movgr2frh.w   $fpreg ,$1
+    insn32(0x114ac00 | 1 << 5 | $fpreg);
+
+    return $fpreg;
+}
+
 sub align($)
 {
     my ($a) = @_;
@@ -379,6 +394,7 @@ sub gen_one_insn($$)
         my $fixedbitmask = $rec->{fixedbitmask};
         my $constraint = $rec->{blocks}{"constraints"};
         my $memblock = $rec->{blocks}{"memory"};
+        my $safefloat = $rec->{blocks}{"safefloat"};
 
         $insn &= ~$fixedbitmask;
         $insn |= $fixedbits;
@@ -414,6 +430,13 @@ sub gen_one_insn($$)
         }
 
         insn32($insn);
+
+        if (defined $safefloat) {
+            # Some result only care about low 32bit,
+            # so we use nanbox_s() make sure that high 32bit is 0xffffffff;
+            my $resultreg;
+            $resultreg = eval_with_fields($insnname, $insn, $rec, "safefloat", $safefloat);
+        }
 
         if (defined $memblock) {
             # Clean up following a memory access instruction:
