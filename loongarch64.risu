@@ -1,0 +1,573 @@
+###############################################################################
+# Copyright (c) 2022 Loongson Technology Corporation Limited
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#     based on aarch64.risu by Claudio Fontana
+#     based on arm.risu by Peter Maydell
+###############################################################################
+
+# Input file for risugen defining LoongArch64 instructions
+.mode loongarch64
+
+#
+# Fixed point arithmetic operation instruction
+#
+add_w LA64 0000 00000001 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+add_d LA64 0000 00000001 00001 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+sub_w LA64 0000 00000001 00010 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+sub_d LA64 0000 00000001 00011 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+slt LA64 0000 00000001 00100 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+sltu LA64 0000 00000001 00101 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+slti LA64 0000 001000 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+sltui LA64 0000 001001 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+nor LA64 0000 00000001 01000 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+and LA64 0000 00000001 01001 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+or LA64 0000 00000001 01010 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+xor LA64 0000 00000001 01011 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+orn LA64 0000 00000001 01100 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+andn LA64 0000 00000001 01101 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mul_w LA64 0000 00000001 11000 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mul_d LA64 0000 00000001 11011 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mulh_w LA64 0000 00000001 11001 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mulh_d LA64 0000 00000001 11100 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mulh_wu LA64 0000 00000001 11010 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mulh_du LA64 0000 00000001 11101 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mulw_d_w LA64 0000 00000001 11110 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mulw_d_wu LA64 0000 00000001 11111 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+
+#div.{w[u]/d[u]} rd,rj,rk
+# the docement 2.2.13,  rk, rj, need in 32bit [0x0 ~0x7FFFFFFF]
+# use function set_reg_w($reg)
+div_w LA64 0000 00000010 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { set_reg_w($rj); set_reg_w($rk); }
+div_wu LA64 0000 00000010 00010 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { set_reg_w($rj); set_reg_w($rk); }
+div_d LA64 0000 00000010 00100 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+div_du LA64 0000 00000010 00110 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mod_w LA64 0000 00000010 00001 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { set_reg_w($rj); set_reg_w($rk); }
+mod_wu LA64 0000 00000010 00011 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { set_reg_w($rj); set_reg_w($rk); }
+mod_d LA64 0000 00000010 00101 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+mod_du LA64 0000 00000010 00111 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+
+alsl_w LA64 0000 00000000 010 sa2:2 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+alsl_wu LA64 0000 00000000 011 sa2:2 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+alsl_d LA64 0000 00000010 110 sa2:2 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+lu12i_w LA64 0001 010 si20:20 rd:5 \
+    !constraints { $rd != 2; }
+lu32i_d LA64 0001 011 si20:20 rd:5 \
+    !constraints { $rd != 2; }
+lu52i_d LA64 0000 001100 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+addi_w LA64 0000 001010 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+addi_d LA64 0000 001011 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+addu16i_d LA64 0001 00 si16:16 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+andi LA64 0000 001101 ui12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+ori LA64 0000 001110 ui12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+xori LA64 0000 001111 ui12:12 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+
+#
+# Fixed point shift operation instruction
+#
+sll_w LA64 0000 00000001 01110 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+sll_d LA64 0000 00000001 10001 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+srl_w LA64 0000 00000001 01111 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+srl_d LA64 0000 00000001 10010 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+sra_w LA64 0000 00000001 10000 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+sra_d LA64 0000 00000001 10011 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+rotr_w LA64 0000 00000001 10110 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+rotr_d LA64 0000 00000001 10111 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+slli_w LA64 0000 00000100 00001 ui5:5 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+slli_d LA64 0000 00000100 0001 ui6:6 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+srli_w LA64 0000 00000100 01001 ui5:5 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+srli_d LA64 0000 00000100 0101 ui6:6 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+srai_w LA64 0000 00000100 10001 ui5:5 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+srai_d LA64 0000 00000100 1001 ui6:6 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+rotri_w LA64 0000 00000100 11001 ui5:5 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+rotri_d LA64 0000 00000100 1101 ui6:6 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+
+#
+# Fixed point bit operation instruction
+#
+ext_w_h LA64 0000 00000000 00000 10110 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+ext_w_b LA64 0000 00000000 00000 10111 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+clo_w LA64 0000 00000000 00000 00100 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+clz_w LA64 0000 00000000 00000 00101 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+cto_w LA64 0000 00000000 00000 00110 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+ctz_w LA64 0000 00000000 00000 00111 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+clo_d LA64 0000 00000000 00000 01000 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+clz_d LA64 0000 00000000 00000 01001 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+cto_d LA64 0000 00000000 00000 01010 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+ctz_d LA64 0000 00000000 00000 01011 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+revb_2h LA64 0000 00000000 00000 01100 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+revb_4h LA64 0000 00000000 00000 01101 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+revb_2w LA64 0000 00000000 00000 01110 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+revb_d  LA64 0000 00000000 00000 01111 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+revh_2w LA64 0000 00000000 00000 10000 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+revh_d  LA64 0000 00000000 00000 10001 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+bitrev_4b LA64 0000 00000000 00000 10010 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+bitrev_8b LA64 0000 00000000 00000 10011 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+bitrev_w  LA64 0000 00000000 00000 10100 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+bitrev_d  LA64 0000 00000000 00000 10101 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2; }
+bytepick_w LA64 0000 00000000 100 sa2:2 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+bytepick_d LA64 0000 00000000 11 sa3:3 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+maskeqz LA64 0000 00000001 00110 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+masknez LA64 0000 00000001 00111 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+bstrins_w LA64 0000 0000011 msbw:5 0 lsbw:5 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2 && $msbw >= $lsbw; }
+bstrins_d LA64 0000 000010 msbd:6 lsbd:6 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2 && $msbd >= $lsbd; }
+bstrpick_w LA64 0000 0000011 msbw:5 1 lsbw:5 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2 && $msbw >= $lsbw; }
+bstrpick_d LA64 0000 000011 msbd:6 lsbd:6 rj:5 rd:5 \
+    !constraints { $rj != 2 && $rd != 2 && $msbd >= $lsbd; }
+
+#
+# Fixed point load/store instruction
+#
+ld_b  LA64 0010 100000 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ld_h  LA64 0010 100001 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ld_w  LA64 0010 100010 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ld_d  LA64 0010 100011 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ld_bu LA64 0010 101000 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ld_hu LA64 0010 101001 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ld_wu LA64 0010 101010 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+st_b  LA64 0010 100100 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rd && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+st_h  LA64 0010 100101 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rd && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+st_w  LA64 0010 100110 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rd && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+st_d  LA64 0010 100111 si12:12 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rd && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+ldx_b LA64 0011 10000000 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+ldx_h LA64 0011 10000000 01000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+ldx_w LA64 0011 10000000 10000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+ldx_d LA64 0011 10000000 11000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+ldx_bu LA64 0011 10000010 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+ldx_hu LA64 0011 10000010 01000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+ldx_wu LA64 0011 10000010 10000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+stx_b LA64 0011 10000001 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rd != $rj && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+stx_h LA64 0011 10000001 01000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rd != $rj && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+stx_w LA64 0011 10000001 10000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rd != $rj && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+stx_d LA64 0011 10000001 11000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rd != $rj && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+preld  LA64 0010 101011 si12:12 rj:5 hint:5 \
+    !constraints { $rj != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+dbar LA64 0011 10000111 00100 hint:15
+ibar LA64 0011 10000111 00101 hint:15
+ldptr_w LA64 0010 0100 si14:14 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si14, 14) * 4); }
+ldptr_d LA64 0010 0110 si14:14 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si14, 14) * 4); }
+stptr_w LA64 0010 0101 si14:14 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rd && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si14, 14) * 4); }
+stptr_d LA64 0010 0111 si14:14 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != $rd && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si14, 14) * 4); }
+
+#
+# Fixed point atomic instruction
+#
+ll_w LA64 0010 0000 si14:14 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si14, 14) * 4); }
+ll_d LA64 0010 0010 si14:14 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si14, 14) * 4); }
+
+amswap_w LA64 0011 10000110 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amswap_d LA64 0011 10000110 00001 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amadd_w LA64 0011 10000110 00010 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amadd_d LA64 0011 10000110 00011 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amand_w LA64 0011 10000110 00100 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amand_d LA64 0011 10000110 00101 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amor_w LA64 0011 10000110 00110 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amor_d LA64 0011 10000110 00111 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amxor_w LA64 0011 10000110 01000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amxor_d LA64 0011 10000110 01001 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_w LA64 0011 10000110 01010 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_d LA64 0011 10000110 01011 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_w LA64 0011 10000110 01100 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_d LA64 0011 10000110 01101 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_wu LA64 0011 10000110 01110 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_du LA64 0011 10000110 01111 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_wu LA64 0011 10000110 10000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_du LA64 0011 10000110 10001 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+
+amswap_db_w LA64 0011 10000110 10010 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amswap_db_d LA64 0011 10000110 10011 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amadd_db_w LA64 0011 10000110 10100 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amadd_db_d LA64 0011 10000110 10101 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amand_db_w LA64 0011 10000110 10110 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amand_db_d LA64 0011 10000110 10111 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amor_db_w LA64 0011 10000110 11000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amor_db_d LA64 0011 10000110 11001 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amxor_db_w LA64 0011 10000110 11010 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+amxor_db_d LA64 0011 10000110 11011 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_db_w LA64 0011 10000110 11100 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_db_d LA64 0011 10000110 11101 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_db_w LA64 0011 10000110 11110 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_db_d LA64 0011 10000110 11111 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_db_wu LA64 0011 10000111 00000 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammax_db_du LA64 0011 10000111 00001 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_db_wu LA64 0011 10000111 00010 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+ammin_db_du LA64 0011 10000111 00011 rk:5 rj:5 rd:5 \
+    !constraints { $rj != 0 && $rd != $rj && $rj != $rk && $rd != $rk && $rk != 2 && $rj != 2 && $rd != 2; } \
+    !memory { reg_plus_reg($rj, 0); }
+
+#
+# Fixed point extra instruction
+#
+crc_w_b_w LA64 0000 00000010 01000 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crc_w_h_w LA64 0000 00000010 01001 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crc_w_w_w LA64 0000 00000010 01010 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crc_w_d_w LA64 0000 00000010 01011 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crcc_w_b_w LA64 0000 00000010 01100 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crcc_w_h_w LA64 0000 00000010 01101 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crcc_w_w_w LA64 0000 00000010 01110 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+crcc_w_d_w LA64 0000 00000010 01111 rk:5 rj:5 rd:5 \
+    !constraints { $rk != 2 && $rj != 2 && $rd != 2; }
+
+#
+# Floating point arithmetic operation instruction
+#
+fadd_s LA64 0000 00010000 00001 fk:5 fj:5 fd:5
+fadd_d LA64 0000 00010000 00010 fk:5 fj:5 fd:5
+fsub_s LA64 0000 00010000 00101 fk:5 fj:5 fd:5
+fsub_d LA64 0000 00010000 00110 fk:5 fj:5 fd:5
+fmul_s LA64 0000 00010000 01001 fk:5 fj:5 fd:5
+fmul_d LA64 0000 00010000 01010 fk:5 fj:5 fd:5
+fdiv_s LA64 0000 00010000 01101 fk:5 fj:5 fd:5
+fdiv_d LA64 0000 00010000 01110 fk:5 fj:5 fd:5
+fmadd_s LA64 0000 10000001 fa:5 fk:5 fj:5 fd:5
+fmadd_d LA64 0000 10000010 fa:5 fk:5 fj:5 fd:5
+fmsub_s LA64 0000 10000101 fa:5 fk:5 fj:5 fd:5
+fmsub_d LA64 0000 10000110 fa:5 fk:5 fj:5 fd:5
+fnmadd_s LA64 0000 10001001 fa:5 fk:5 fj:5 fd:5
+fnmadd_d LA64 0000 10001010 fa:5 fk:5 fj:5 fd:5
+fnmsub_s LA64 0000 10001101 fa:5 fk:5 fj:5 fd:5
+fnmsub_d LA64 0000 10001110 fa:5 fk:5 fj:5 fd:5
+fmax_s LA64 0000 00010000 10001 fk:5 fj:5 fd:5
+fmax_d LA64 0000 00010000 10010 fk:5 fj:5 fd:5
+fmin_s LA64 0000 00010000 10101 fk:5 fj:5 fd:5
+fmin_d LA64 0000 00010000 10110 fk:5 fj:5 fd:5
+fmaxa_s LA64 0000 00010000 11001 fk:5 fj:5 fd:5
+fmaxa_d LA64 0000 00010000 11010 fk:5 fj:5 fd:5
+fmina_s LA64 0000 00010000 11101 fk:5 fj:5 fd:5
+fmina_d LA64 0000 00010000 11110 fk:5 fj:5 fd:5
+fabs_s LA64 0000 00010001 01000 00001 fj:5 fd:5
+fabs_d LA64 0000 00010001 01000 00010 fj:5 fd:5
+fneg_s LA64 0000 00010001 01000 00101 fj:5 fd:5
+fneg_d LA64 0000 00010001 01000 00110 fj:5 fd:5
+fsqrt_s LA64 0000 00010001 01000 10001 fj:5 fd:5
+fsqrt_d LA64 0000 00010001 01000 10010 fj:5 fd:5
+frecip_s LA64 0000 00010001 01000 10101 fj:5 fd:5
+frecip_d LA64 0000 00010001 01000 10110 fj:5 fd:5
+frsqrt_s LA64 0000 00010001 01000 11001 fj:5 fd:5
+frsqrt_d LA64 0000 00010001 01000 11010 fj:5 fd:5
+fscaleb_s LA64 0000 00010001 00001 fk:5 fj:5 fd:5
+fscaleb_d LA64 0000 00010001 00010 fk:5 fj:5 fd:5
+flogb_s LA64 0000 00010001 01000 01001 fj:5 fd:5
+flogb_d LA64 0000 00010001 01000 01010 fj:5 fd:5
+fcopysign_s LA64 0000 00010001 00101 fk:5 fj:5 fd:5
+fcopysign_d LA64 0000 00010001 00110 fk:5 fj:5 fd:5
+fclass_s LA64 0000 00010001 01000 01101 fj:5 fd:5
+fclass_d LA64 0000 00010001 01000 01110 fj:5 fd:5
+
+#
+# Floating point compare instruction
+#
+fcmp_cond_s LA64 0000 11000001 cond:5 fk:5 fj:5 00 cd:3 \
+    !constraints { $cond > 0 && $cond < 0x12; }
+fcmp_cond_d LA64 0000 11000010 cond:5 fk:5 fj:5 00 cd:3 \
+    !constraints { $cond > 0 && $cond < 0x12; }
+
+#
+# Floating point conversion instruction
+#
+fcvt_s_d LA64 0000 00010001 10010 00110 fj:5 fd:5
+fcvt_d_s LA64 0000 00010001 10010 01001 fj:5 fd:5
+ftintrm_w_s LA64 0000 00010001 10100 00001 fj:5 fd:5
+ftintrm_w_d LA64 0000 00010001 10100 00010 fj:5 fd:5
+ftintrm_l_s LA64 0000 00010001 10100 01001 fj:5 fd:5
+ftintrm_l_d LA64 0000 00010001 10100 01010 fj:5 fd:5
+ftintrp_w_s LA64 0000 00010001 10100 10001 fj:5 fd:5
+ftintrp_w_d LA64 0000 00010001 10100 10010 fj:5 fd:5
+ftintrp_l_s LA64 0000 00010001 10100 11001 fj:5 fd:5
+ftintrp_l_d LA64 0000 00010001 10100 11010 fj:5 fd:5
+ftintrz_w_s LA64 0000 00010001 10101 00001 fj:5 fd:5
+ftintrz_w_d LA64 0000 00010001 10101 00010 fj:5 fd:5
+ftintrz_l_s LA64 0000 00010001 10101 01001 fj:5 fd:5
+ftintrz_l_d LA64 0000 00010001 10101 01010 fj:5 fd:5
+ftintrne_w_s LA64 0000 00010001 10101 10001 fj:5 fd:5
+ftintrne_w_d LA64 0000 00010001 10101 10010 fj:5 fd:5
+ftintrne_l_s LA64 0000 00010001 10101 11001 fj:5 fd:5
+ftintrne_l_d LA64 0000 00010001 10101 11010 fj:5 fd:5
+ftint_w_s LA64 0000 00010001 10110 00001 fj:5 fd:5
+ftint_w_d LA64 0000 00010001 10110 00010 fj:5 fd:5
+ftint_l_s LA64 0000 00010001 10110 01001 fj:5 fd:5
+ftint_l_d LA64 0000 00010001 10110 01010 fj:5 fd:5
+ffint_s_w LA64 0000 00010001 11010 00100 fj:5 fd:5
+ffint_s_l LA64 0000 00010001 11010 00110 fj:5 fd:5
+ffint_d_w LA64 0000 00010001 11010 01000 fj:5 fd:5
+ffint_d_l LA64 0000 00010001 11010 01010 fj:5 fd:5
+frint_s LA64 0000 00010001 11100 10001 fj:5 fd:5
+frint_d LA64 0000 00010001 11100 10010 fj:5 fd:5
+
+#
+# Floating point move instruction
+#
+fmov_s LA64 0000 00010001 01001 00101 fj:5 fd:5
+fmov_d LA64 0000 00010001 01001 00110 fj:5 fd:5
+fsel LA64 0000 11010000 00 ca:3 fk:5 fj:5 fd:5
+movgr2fr_w LA64 0000 00010001 01001 01001 rj:5 fd:5 \
+    !constraints { $rj != 2; }
+movgr2fr_d LA64 0000 00010001 01001 01010 rj:5 fd:5 \
+    !constraints { $rj != 2; }
+movgr2frh_w LA64 0000 00010001 01001 01011 rj:5 fd:5 \
+    !constraints { $rj != 2; }
+movfr2gr_s LA64 0000 00010001 01001 01101 fj:5 rd:5 \
+    !constraints { $rd != 2; }
+movfr2gr_d LA64 0000 00010001 01001 01110 fj:5 rd:5 \
+    !constraints { $rd != 2; }
+movfrh2gr_s LA64 0000 00010001 01001 01111 fj:5 rd:5 \
+    !constraints { $rd != 2; }
+movfr2cf LA64 0000 00010001 01001 10100 fj:5 00 cd:3
+movcf2fr LA64 0000 00010001 01001 10101 00 cj:3 fd:5
+movgr2cf LA64 0000 00010001 01001 10110 rj:5 00 cd:3 \
+    !constraints { $rj != 2; }
+movcf2gr LA64 0000 00010001 01001 10111 00 cj:3 rd:5 \
+    !constraints { $rd != 2; }
+
+#
+# Floating point load/store instruction
+#
+fld_s LA64 0010 101100 si12:12 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+fst_s LA64 0010 101101 si12:12 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+fld_d LA64 0010 101110 si12:12 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+fst_d LA64 0010 101111 si12:12 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != 2; } \
+    !memory { reg_plus_imm($rj, sextract($si12, 12)); }
+fldx_s LA64 0011 10000011 00000 rk:5 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+fldx_d LA64 0011 10000011 01000 rk:5 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+fstx_s LA64 0011 10000011 10000 rk:5 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
+fstx_d LA64 0011 10000011 11000 rk:5 rj:5 fd:5 \
+    !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2; } \
+    !memory { reg_plus_reg($rj, $rk); }
