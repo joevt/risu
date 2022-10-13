@@ -329,7 +329,7 @@ static void set_sigill_handler(void (*fn) (int, siginfo_t *, void *))
     memset(&sa, 0, sizeof(struct sigaction));
 
     sa.sa_sigaction = fn;
-    sa.sa_flags = SA_SIGINFO;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGILL, &sa, 0) != 0) {
         perror("sigaction");
@@ -550,6 +550,7 @@ int main(int argc, char **argv)
     char *trace_fn = NULL;
     struct option *longopts;
     char *shortopts;
+    stack_t ss;
 
     longopts = setup_options(&shortopts);
 
@@ -616,6 +617,19 @@ int main(int argc, char **argv)
     }
 
     load_image(imgfile);
+
+    /* create alternate stack */
+    ss.ss_sp = malloc(SIGSTKSZ);
+    if (ss.ss_sp == NULL) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+    ss.ss_size = SIGSTKSZ;
+    ss.ss_flags = 0;
+    if (sigaltstack(&ss, NULL) == -1) {
+        perror("sigaltstac");
+        exit(EXIT_FAILURE);
+    }
 
     /* E.g. select requested SVE vector length. */
     arch_init();
