@@ -91,7 +91,8 @@ program_exists() {
 for triplet in i386-linux-gnu i686-linux-gnu x86_64-linux-gnu \
                    aarch64-linux-gnu arm-linux-gnueabihf \
                    m68k-linux-gnu \
-                   powerpc64le-linux-gnu powerpc64-linux-gnu ; do
+                   powerpc64le-linux-gnu powerpc64-linux-gnu \
+                   s390x-linux-gnu ; do
 
     if ! program_exists "${triplet}-gcc"; then
         echo "Skipping ${triplet}: no compiler found"
