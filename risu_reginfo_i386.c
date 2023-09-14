@@ -102,7 +102,7 @@ static void *xsave_feature_buf(struct _xstate *xs, int feature)
 }
 
 /* reginfo_init: initialize with a ucontext */
-void reginfo_init(struct reginfo *ri, ucontext_t *uc)
+void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 {
     int i, nvecregs;
     struct _fpstate *fp;

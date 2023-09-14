@@ -106,14 +106,14 @@ static void respond(RisuResult r)
     }
 }
 
-static RisuResult send_register_info(void *uc)
+static RisuResult send_register_info(void *uc, void *siaddr)
 {
     uint64_t paramreg;
     RisuResult res;
     RisuOp op;
     void *extra;
 
-    reginfo_init(&ri[MASTER], uc);
+    reginfo_init(&ri[MASTER], uc, siaddr);
     op = get_risuop(&ri[MASTER]);
 
     /* Write a header with PC/op to keep in sync */
@@ -178,7 +178,7 @@ static void master_sigill(int sig, siginfo_t *si, void *uc)
     RisuResult r;
     signal_count++;
 
-    r = send_register_info(uc);
+    r = send_register_info(uc, si->si_addr);
     if (r == RES_OK) {
         advance_pc(uc);
     } else {
@@ -232,13 +232,13 @@ static RisuResult recv_register_info(struct reginfo *ri)
     }
 }
 
-static RisuResult recv_and_compare_register_info(void *uc)
+static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
 {
     uint64_t paramreg;
     RisuResult res;
     RisuOp op;
 
-    reginfo_init(&ri[APPRENTICE], uc);
+    reginfo_init(&ri[APPRENTICE], uc, siaddr);
 
     res = recv_register_info(&ri[MASTER]);
     if (res != RES_OK) {
@@ -315,7 +315,7 @@ static void apprentice_sigill(int sig, siginfo_t *si, void *uc)
     RisuResult r;
     signal_count++;
 
-    r = recv_and_compare_register_info(uc);
+    r = recv_and_compare_register_info(uc, si->si_addr);
     if (r == RES_OK) {
         advance_pc(uc);
     } else {

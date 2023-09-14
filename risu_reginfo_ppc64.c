@@ -42,7 +42,7 @@ int reginfo_size(struct reginfo *ri)
 }
 
 /* reginfo_init: initialize with a ucontext */
-void reginfo_init(struct reginfo *ri, ucontext_t *uc)
+void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 {
     int i;
 

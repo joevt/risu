@@ -118,7 +118,7 @@ static void reginfo_init_vfp(struct reginfo *ri, ucontext_t *uc)
     }
 }
 
-void reginfo_init(struct reginfo *ri, ucontext_t *uc)
+void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 {
     memset(ri, 0, sizeof(*ri));         /* necessary for memcmp later */
 
