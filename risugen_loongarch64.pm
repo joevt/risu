@@ -81,6 +81,18 @@ sub nanbox_s($)
     return $fpreg;
 }
 
+sub clean_lsx_result($)
+{
+    my ($vreg) = @_;
+
+    # xvinsgr2vr.d vd, r0, 2;
+    insn32(0x76ebe000 | 2 << 10 | $vreg);
+    # xvinsgr2vr.d vd, r0, 3;
+    insn32(0x76ebe000 | 3 << 10 | $vreg);
+
+    return $vreg;
+}
+
 sub align($)
 {
     my ($a) = @_;
