@@ -394,7 +394,7 @@ sub gen_one_insn($$)
         my $fixedbitmask = $rec->{fixedbitmask};
         my $constraint = $rec->{blocks}{"constraints"};
         my $memblock = $rec->{blocks}{"memory"};
-        my $safefloat = $rec->{blocks}{"safefloat"};
+        my $post = $rec->{blocks}{"post"};
 
         $insn &= ~$fixedbitmask;
         $insn |= $fixedbits;
@@ -431,11 +431,10 @@ sub gen_one_insn($$)
 
         insn32($insn);
 
-        if (defined $safefloat) {
-            # Some result only care about low 32bit,
-            # so we use nanbox_s() make sure that high 32bit is 0xffffffff;
+        if (defined $post) {
+            # The hook for doing things after emitting the instruction.
             my $resultreg;
-            $resultreg = eval_with_fields($insnname, $insn, $rec, "safefloat", $safefloat);
+            $resultreg = eval_with_fields($insnname, $insn, $rec, "post", $post);
         }
 
         if (defined $memblock) {

@@ -437,67 +437,67 @@ crcc_w_d_w LA64 0000 00000010 01111 rk:5 rj:5 rd:5 \
 # Floating point arithmetic operation instruction
 #
 fadd_s LA64 0000 00010000 00001 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fadd_d LA64 0000 00010000 00010 fk:5 fj:5 fd:5
 fsub_s LA64 0000 00010000 00101 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fsub_d LA64 0000 00010000 00110 fk:5 fj:5 fd:5
 fmul_s LA64 0000 00010000 01001 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmul_d LA64 0000 00010000 01010 fk:5 fj:5 fd:5
 fdiv_s LA64 0000 00010000 01101 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fdiv_d LA64 0000 00010000 01110 fk:5 fj:5 fd:5
 fmadd_s LA64 0000 10000001 fa:5 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmadd_d LA64 0000 10000010 fa:5 fk:5 fj:5 fd:5
 fmsub_s LA64 0000 10000101 fa:5 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmsub_d LA64 0000 10000110 fa:5 fk:5 fj:5 fd:5
 fnmadd_s LA64 0000 10001001 fa:5 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fnmadd_d LA64 0000 10001010 fa:5 fk:5 fj:5 fd:5
 fnmsub_s LA64 0000 10001101 fa:5 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fnmsub_d LA64 0000 10001110 fa:5 fk:5 fj:5 fd:5
 fmax_s LA64 0000 00010000 10001 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmax_d LA64 0000 00010000 10010 fk:5 fj:5 fd:5
 fmin_s LA64 0000 00010000 10101 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmin_d LA64 0000 00010000 10110 fk:5 fj:5 fd:5
 fmaxa_s LA64 0000 00010000 11001 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmaxa_d LA64 0000 00010000 11010 fk:5 fj:5 fd:5
 fmina_s LA64 0000 00010000 11101 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmina_d LA64 0000 00010000 11110 fk:5 fj:5 fd:5
 fabs_s LA64 0000 00010001 01000 00001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fabs_d LA64 0000 00010001 01000 00010 fj:5 fd:5
 fneg_s LA64 0000 00010001 01000 00101 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fneg_d LA64 0000 00010001 01000 00110 fj:5 fd:5
 fsqrt_s LA64 0000 00010001 01000 10001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fsqrt_d LA64 0000 00010001 01000 10010 fj:5 fd:5
 frecip_s LA64 0000 00010001 01000 10101 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 frecip_d LA64 0000 00010001 01000 10110 fj:5 fd:5
 frsqrt_s LA64 0000 00010001 01000 11001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 frsqrt_d LA64 0000 00010001 01000 11010 fj:5 fd:5
 fscaleb_s LA64 0000 00010001 00001 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fscaleb_d LA64 0000 00010001 00010 fk:5 fj:5 fd:5
 flogb_s LA64 0000 00010001 01000 01001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 flogb_d LA64 0000 00010001 01000 01010 fj:5 fd:5
 fcopysign_s LA64 0000 00010001 00101 fk:5 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fcopysign_d LA64 0000 00010001 00110 fk:5 fj:5 fd:5
 fclass_s LA64 0000 00010001 01000 01101 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fclass_d LA64 0000 00010001 01000 01110 fj:5 fd:5
 
 #
@@ -512,58 +512,58 @@ fcmp_cond_d LA64 0000 11000010 cond:5 fk:5 fj:5 00 cd:3 \
 # Floating point conversion instruction
 #
 fcvt_s_d LA64 0000 00010001 10010 00110 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fcvt_d_s LA64 0000 00010001 10010 01001 fj:5 fd:5
 ftintrm_w_s LA64 0000 00010001 10100 00001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrm_w_d LA64 0000 00010001 10100 00010 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrm_l_s LA64 0000 00010001 10100 01001 fj:5 fd:5
 ftintrm_l_d LA64 0000 00010001 10100 01010 fj:5 fd:5
 ftintrp_w_s LA64 0000 00010001 10100 10001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrp_w_d LA64 0000 00010001 10100 10010 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrp_l_s LA64 0000 00010001 10100 11001 fj:5 fd:5
 ftintrp_l_d LA64 0000 00010001 10100 11010 fj:5 fd:5
 ftintrz_w_s LA64 0000 00010001 10101 00001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrz_w_d LA64 0000 00010001 10101 00010 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrz_l_s LA64 0000 00010001 10101 01001 fj:5 fd:5
 ftintrz_l_d LA64 0000 00010001 10101 01010 fj:5 fd:5
 ftintrne_w_s LA64 0000 00010001 10101 10001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrne_w_d LA64 0000 00010001 10101 10010 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftintrne_l_s LA64 0000 00010001 10101 11001 fj:5 fd:5
 ftintrne_l_d LA64 0000 00010001 10101 11010 fj:5 fd:5
 ftint_w_s LA64 0000 00010001 10110 00001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftint_w_d LA64 0000 00010001 10110 00010 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ftint_l_s LA64 0000 00010001 10110 01001 fj:5 fd:5
 ftint_l_d LA64 0000 00010001 10110 01010 fj:5 fd:5
 ffint_s_w LA64 0000 00010001 11010 00100 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ffint_s_l LA64 0000 00010001 11010 00110 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 ffint_d_w LA64 0000 00010001 11010 01000 fj:5 fd:5
 ffint_d_l LA64 0000 00010001 11010 01010 fj:5 fd:5
 frint_s LA64 0000 00010001 11100 10001 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 frint_d LA64 0000 00010001 11100 10010 fj:5 fd:5
 
 #
 # Floating point move instruction
 #
 fmov_s LA64 0000 00010001 01001 00101 fj:5 fd:5 \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fmov_d LA64 0000 00010001 01001 00110 fj:5 fd:5
 fsel LA64 0000 11010000 00 ca:3 fk:5 fj:5 fd:5
 movgr2fr_w LA64 0000 00010001 01001 01001 rj:5 fd:5 \
     !constraints { $rj != 2; } \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 movgr2fr_d LA64 0000 00010001 01001 01010 rj:5 fd:5 \
     !constraints { $rj != 2; }
 movgr2frh_w LA64 0000 00010001 01001 01011 rj:5 fd:5 \
@@ -587,7 +587,7 @@ movcf2gr LA64 0000 00010001 01001 10111 00 cj:3 rd:5 \
 fld_s LA64 0010 101100 si12:12 rj:5 fd:5 \
     !constraints { $rj != 0 && $rj != 2; } \
     !memory { reg_plus_imm($rj, sextract($si12, 12)); } \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fst_s LA64 0010 101101 si12:12 rj:5 fd:5 \
     !constraints { $rj != 0 && $rj != 2; } \
     !memory { reg_plus_imm($rj, sextract($si12, 12)); }
@@ -600,7 +600,7 @@ fst_d LA64 0010 101111 si12:12 rj:5 fd:5 \
 fldx_s LA64 0011 10000011 00000 rk:5 rj:5 fd:5 \
     !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2; } \
     !memory { reg_plus_reg($rj, $rk); } \
-    !safefloat { nanbox_s($fd); }
+    !post { nanbox_s($fd); }
 fldx_d LA64 0011 10000011 01000 rk:5 rj:5 fd:5 \
     !constraints { $rj != 0 && $rj != $rk && $rk != 2 && $rj != 2; } \
     !memory { reg_plus_reg($rj, $rk); }
