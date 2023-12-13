@@ -374,6 +374,16 @@ sub write_random_register_data($)
     if ($fp_enabled) {
         # Load floating point registers
         write_random_loongarch64_fpdata();
+
+        # Write random LASX data.
+        for (my $i = 0; $i < 32; $i++) {
+            my $tmp_reg = 6;
+            # $fi is lasx register initial value.
+            # movfr2gr.d r6 fi
+            insn32(0x114b800 | $i << 5 | $tmp_reg);
+            # xvreplgr2vr_d  $i r6
+            insn32(0x769f0c00 | 6 << 5 | $i);
+        }
     }
 
     write_random_regdata();
