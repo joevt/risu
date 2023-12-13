@@ -19,7 +19,8 @@ struct reginfo {
     uint32_t flags;
     uint32_t fcsr;
     uint32_t faulting_insn;
-    uint64_t fpregs[32];
+    uint64_t vregs[4 * 32];
+    uint64_t vl;
 };
 
 #endif /* RISU_REGINFO_LOONGARCH64_H */

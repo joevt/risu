@@ -37,6 +37,8 @@ struct extctx_layout {
         unsigned long size;
         unsigned int flags;
         struct _ctx_layout fpu;
+        struct _ctx_layout lsx;
+        struct _ctx_layout lasx;
         struct _ctx_layout end;
 };
 
@@ -72,6 +74,20 @@ static int parse_extcontext(struct sigcontext *sc, struct extctx_layout *extctx)
             }
             extctx->fpu.addr = info;
             break;
+        case LSX_CTX_MAGIC:
+            if (size < (sizeof(struct sctx_info) +
+                        sizeof(struct lsx_context))) {
+                return -1;
+            }
+            extctx->lsx.addr = info;
+            break;
+        case LASX_CTX_MAGIC:
+            if (size < (sizeof(struct sctx_info) +
+                        sizeof(struct lasx_context))) {
+                return -1;
+            }
+            extctx->lasx.addr = info;
+            break;
         default:
             return -1;
        }
@@ -100,15 +116,40 @@ void reginfo_init(struct reginfo *ri, ucontext_t *context, void *siaddr)
     ri->faulting_insn = *(uint32_t *)uc->uc_mcontext.sc_pc;
 
     parse_extcontext(&uc->uc_mcontext, &extctx);
-    if (extctx.fpu.addr) {
+    if (extctx.lasx.addr) {
+        struct sctx_info *info = extctx.lasx.addr;
+        struct lasx_context *lasx_ctx = (struct lasx_context *)((char *)info +
+                                        sizeof(struct sctx_info));
+        for (i = 0; i < 32; i++) {
+            ri->vregs[4 * i] = lasx_ctx->regs[4 * i];
+            ri->vregs[4 * i + 1] = lasx_ctx->regs[4 * i + 1];
+            ri->vregs[4 * i + 2] = lasx_ctx->regs[4 * i + 2];
+            ri->vregs[4 * i + 3] = lasx_ctx->regs[4 * i + 3];
+        }
+        ri->fcsr = lasx_ctx->fcsr;
+        ri->fcc = lasx_ctx->fcc;
+        ri->vl = 256;
+    } else if (extctx.lsx.addr) {
+        struct sctx_info *info = extctx.lsx.addr;
+        struct lsx_context *lsx_ctx = (struct lsx_context *)((char *)info +
+                                      sizeof(struct sctx_info));
+        for (i = 0; i < 32; i++) {
+            ri->vregs[4 * i] = lsx_ctx->regs[4 * i + 1];
+            ri->vregs[4 * i + 1] = lsx_ctx->regs[4 * i + 1];
+        }
+        ri->fcsr = lsx_ctx->fcsr;
+        ri->fcc = lsx_ctx->fcc;
+        ri->vl = 128;
+    } else if (extctx.fpu.addr) {
         struct sctx_info *info = extctx.fpu.addr;
         struct fpu_context *fpu_ctx = (struct fpu_context *)((char *)info +
-                                       sizeof(struct sctx_info));
+                                      sizeof(struct sctx_info));
         for(i = 0; i < 32; i++) {
-	    ri->fpregs[i] = fpu_ctx->regs[i];
+	    ri->vregs[4 * i] = fpu_ctx->regs[4 * i];
         }
-	ri->fcsr = fpu_ctx->fcsr;
-	ri->fcc = fpu_ctx->fcc;
+        ri->fcsr = fpu_ctx->fcsr;
+        ri->fcc = fpu_ctx->fcc;
+        ri->vl = 64;
     }
 }
 
@@ -132,9 +173,23 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
     fprintf(f, "  flags  : %08x\n", ri->flags);
     fprintf(f, "  fcc    : %016" PRIx64 "\n", ri->fcc);
     fprintf(f, "  fcsr   : %08x\n", ri->fcsr);
+    fprintf(f, "  vl     : %016" PRIx64 "\n", ri->vl);
 
-    for (i = 0; i < 32; i++) {
-        fprintf(f, "  f%-2d    : %016lx\n", i, ri->fpregs[i]);
+    if (ri->vl == 256) {
+        for (i = 0; i < 32; i++) {
+            fprintf(f, "  vreg%-2d    : {%016lx, %016lx, %016lx, %016lx}\n", i,
+                    ri->vregs[4 * i + 3], ri->vregs[4 * i + 2],
+                    ri->vregs[4 * i + 1], ri->vregs[4 * i]);
+        }
+    } else if (ri->vl == 128) {
+        for (i = 0; i < 32; i++) {
+            fprintf(f, "  vreg%-2d    : {%016lx, %016lx}\n", i,
+                    ri->vregs[4 * i + 1], ri->vregs[4 * i]);
+        }
+    } else if (ri->vl == 64) {
+        for (i = 0; i < 32; i++) {
+            fprintf(f, "  vreg%-2d    : %016lx\n", i, ri->vregs[4 * i]);
+        }
     }
 
     return !ferror(f);
@@ -145,6 +200,11 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE * f)
 {
     int i;
     fprintf(f, "mismatch detail (master : apprentice):\n");
+
+    if (m->vl != a->vl) {
+        fprintf(f, "  vl mismatch %08lx vs %08lx\n", m->vl, a->vl);
+    }
+
     if (m->faulting_insn != a->faulting_insn) {
         fprintf(f, "  faulting insn mismatch %08x vs %08x\n",
                 m->faulting_insn, a->faulting_insn);
@@ -172,10 +232,35 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE * f)
         fprintf(f, "  fcsr   : %08x vs %08x\n", m->fcsr, a->fcsr);
     }
 
-    for (i = 0; i < 32; i++) {
-        if (m->fpregs[i]!= a->fpregs[i]) {
-            fprintf(f, "  f%-2d    : %016lx vs %016lx\n",
-                    i, m->fpregs[i], a->fpregs[i]);
+    if (m->vl == 256) {
+        for (i = 0; i < 32; i++) {
+            if (m->vregs[4 * i + 3] != a->vregs[4 * i + 3] ||
+                m->vregs[4 * i + 2] != a->vregs[4 * i + 2] ||
+                m->vregs[4 * i + 1] != a->vregs[4 * i + 1] ||
+                m->vregs[4 * i] != a->vregs[4 * i]) {
+                fprintf(f, "  vreg%-2d    : {%016lx, %016lx, %016lx, %016lx} vs"
+                           " {%016lx, %016lx, %016lx, %016lx}\n", i,
+                        m->vregs[4 * i + 3], m->vregs[4 * i + 2],
+                        m->vregs[4 * i + 1], m->vregs[4 * i],
+                        a->vregs[4 * i + 3], a->vregs[4 * i + 2],
+                        a->vregs[4 * i + 1], a->vregs[4 * i]);
+            }
+        }
+    } else if (m->vl == 128) {
+        for (i = 0; i < 32; i++) {
+            if (m->vregs[4 * i + 1] != a->vregs[4 * i + 1] ||
+                m->vregs[4 * i] != a->vregs[4 * i]) {
+                fprintf(f, "  vreg%-2d    : {%016lx, %016lx} vs {%016lx, %016lx}\n",
+                        i, m->vregs[4 * i + 1], m->vregs[4 * i],
+                        a->vregs[4 * i + 1], m->vregs[4 * i]);
+            }
+        }
+    } else if (m->vl == 64) {
+        for (i = 0; i < 32; i++) {
+            if (m->vregs[4 * i]  != a->vregs[4 * i]) {
+                fprintf(f, "  vreg%-2d  : %016lx vs %016lx\n", i,
+                        m->vregs[4 * i], a->vregs[4 * i]);
+            }
         }
     }
 
