@@ -198,7 +198,7 @@ fi
 
 # Are we in a separate build tree? If so, link the Makefile
 # so that 'make' works.
-if test ! -e Makefile || test -s Makefile; then
+if test ! -e Makefile || test -L Makefile; then
     echo "linking Makefile..."
     BUILD_INC="-I $(pwd)"
     ln -sf "${SRCDIR}/Makefile" .
