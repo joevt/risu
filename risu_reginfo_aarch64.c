@@ -68,6 +68,11 @@ void arch_init(void)
     }
 }
 
+void do_image()
+{
+    image_start();
+}
+
 int reginfo_size(struct reginfo *ri)
 {
     int size = offsetof(struct reginfo, extra);

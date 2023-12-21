@@ -341,10 +341,8 @@ static void set_sigill_handler(void (*fn) (int, siginfo_t *, void *))
     }
 }
 
-typedef void entrypoint_fn(void);
-
 uintptr_t image_start_address;
-static entrypoint_fn *image_start;
+entrypoint_fn *image_start;
 
 static void load_image(const char *imgfile)
 {
@@ -387,7 +385,7 @@ static int master(void)
         set_sigill_handler(&master_sigill);
         fprintf(stderr, "starting image at 0x%"PRIxPTR"\n",
                 image_start_address);
-        image_start();
+        do_image();
         fprintf(stderr, "image returned unexpectedly\n");
         return EXIT_FAILURE;
 
@@ -438,7 +436,7 @@ static int apprentice(void)
         set_sigill_handler(&apprentice_sigill);
         fprintf(stderr, "starting image at 0x%"PRIxPTR"\n",
                 image_start_address);
-        image_start();
+        do_image();
         fprintf(stderr, "image returned unexpectedly\n");
         return EXIT_FAILURE;
 
