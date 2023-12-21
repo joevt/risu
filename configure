@@ -90,6 +90,15 @@ EOF
     compile $c && link $c $1
 }
 
+check_header() {
+    c=${tmp_dir}/check_header${1}
+    cat > ${c}.c <<EOF
+#include <$2.h>
+int main(void) { return 0; }
+EOF
+    compile $c
+}
+
 generate_config() {
     cfg=config.h
     echo "generating config.h..."
