@@ -132,6 +132,8 @@ generate_makefilein() {
     echo "STATIC:=${STATIC}" >> $m
     echo "SRCDIR:=${SRCDIR}" >> $m
     echo "BUILD_INC:=${BUILD_INC}" >> $m
+    echo "SRCS:=${SRCS}" >> $m
+    echo "HDRS:=${HDRS}" >> $m
 
     echo "...done"
 }
