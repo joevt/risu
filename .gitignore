@@ -7,3 +7,10 @@ core
 config.h
 Makefile.in
 build
+*.pbxuser
+*.mode1v3
+*.mode1
+*.i
+risu*.s
+getopt.s
+comms.s
