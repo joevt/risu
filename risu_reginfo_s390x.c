@@ -73,6 +73,11 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
     memcpy(ri->fprs, &uc->uc_mcontext.fpregs.fprs, sizeof(ri->fprs));
 }
 
+/* reginfo_update: update a ucontext */
+void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr)
+{
+}
+
 /* reginfo_is_eq: compare the reginfo structs, returns nonzero if equal */
 int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 {

@@ -122,6 +122,9 @@ uintptr_t get_pc(struct reginfo *ri);
 /* initialize structure from a ucontext */
 void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr);
 
+/* update a ucontext */
+void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr);
+
 /* return 1 if structs are equal, 0 otherwise. */
 int reginfo_is_eq(struct reginfo *r1, struct reginfo *r2);
 

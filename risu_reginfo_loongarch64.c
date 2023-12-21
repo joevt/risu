@@ -153,6 +153,11 @@ void reginfo_init(struct reginfo *ri, ucontext_t *context, void *siaddr)
     }
 }
 
+/* reginfo_update: update a ucontext */
+void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr)
+{
+}
+
 /* reginfo_is_eq: compare the reginfo structs, returns nonzero if equal */
 int reginfo_is_eq(struct reginfo *r1, struct reginfo *r2)
 {
