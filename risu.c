@@ -41,6 +41,7 @@ static void *memblock;
 static int comm_fd;
 static bool trace;
 static size_t signal_count;
+static uintptr_t signal_pc;
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
@@ -181,6 +182,7 @@ static void master_sigill(int sig, siginfo_t *si, void *uc)
     if (r == RES_OK) {
         advance_pc(uc);
     } else {
+        signal_pc = get_uc_pc(uc, si->si_addr);
         siglongjmp(jmpbuf, r);
     }
 }
@@ -320,6 +322,7 @@ static void apprentice_sigill(int sig, siginfo_t *si, void *uc)
     if (r == RES_OK) {
         advance_pc(uc);
     } else {
+        signal_pc = get_uc_pc(uc, si->si_addr);
         siglongjmp(jmpbuf, r);
     }
 }
