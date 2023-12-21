@@ -385,9 +385,8 @@ static int master(void)
     switch (res) {
     case RES_OK:
         set_sigill_handler(&master_sigill);
-        fprintf(stderr, "starting master image at 0x%"PRIxPTR"\n",
+        fprintf(stderr, "starting image at 0x%"PRIxPTR"\n",
                 image_start_address);
-        fprintf(stderr, "starting image\n");
         image_start();
         fprintf(stderr, "image returned unexpectedly\n");
         return EXIT_FAILURE;
@@ -437,9 +436,8 @@ static int apprentice(void)
     switch (res) {
     case RES_OK:
         set_sigill_handler(&apprentice_sigill);
-        fprintf(stderr, "starting apprentice image at 0x%"PRIxPTR"\n",
+        fprintf(stderr, "starting image at 0x%"PRIxPTR"\n",
                 image_start_address);
-        fprintf(stderr, "starting image\n");
         image_start();
         fprintf(stderr, "image returned unexpectedly\n");
         return EXIT_FAILURE;
@@ -643,9 +641,13 @@ int main(int argc, char **argv)
     /* E.g. select requested SVE vector length. */
     arch_init();
 
+    int result;
     if (ismaster) {
-        return master();
+        fprintf(stderr, "starting master\n");
+        result = master();
     } else {
-        return apprentice();
+        fprintf(stderr, "starting apprentice\n");
+        result = apprentice();
     }
+    return result;
 }
