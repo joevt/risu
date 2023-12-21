@@ -104,7 +104,7 @@ ADDZEdo PPC64LE 011111 rt:5 ra:5 0000010110010100 \
 !constraints { $rt != 1 && $ra != 1 && $rt != 13 && $ra != 13; }
 
 # format:X book:I page:93 v:P1 SR and AND
-AND PP64LE 011111 rs:5 ra:5 rb:5 00000111000 \
+AND PPC64LE 011111 rs:5 ra:5 rb:5 00000111000 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
 # format:X book:I page:93 v:P1 SR and. AND
 ANDd PPC64LE 011111 rs:5 ra:5 rb:5 00000111001 \
