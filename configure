@@ -33,7 +33,7 @@ compile() {
 }
 
 link() {
-    $LD $LDFLAGS -l${2} -o ${1} ${1}.o 2>/dev/null
+    $LD $LDFLAGS -l${2} -o ${1} ${1}.o > /dev/null 2>&1
 }
 
 check_define() {
