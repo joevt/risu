@@ -21,6 +21,12 @@ void advance_pc(void *vuc)
     uc->uc_mcontext.regs->nip += 4;
 }
 
+uintptr_t get_uc_pc(void *vuc, void *siaddr)
+{
+    ucontext_t *uc = (ucontext_t *) vuc;
+    return uc->uc_mcontext.regs->nip;
+}
+
 void set_ucontext_paramreg(void *vuc, uint64_t value)
 {
     ucontext_t *uc = vuc;

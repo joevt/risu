@@ -21,6 +21,11 @@ void advance_pc(void *vuc)
      */
 }
 
+uintptr_t get_uc_pc(void *vuc, void *siaddr)
+{
+    return siaddr;
+}
+
 void set_ucontext_paramreg(void *vuc, uint64_t value)
 {
     ucontext_t *uc = vuc;

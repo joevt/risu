@@ -27,6 +27,12 @@ void advance_pc(void *vuc)
     uc->uc_mcontext.gregs[REG_E(IP)] += 3;
 }
 
+uintptr_t get_uc_pc(void *vuc, void *siaddr)
+{
+    ucontext_t *uc = (ucontext_t *) vuc;
+    return uc->uc_mcontext.gregs[REG_E(IP)];
+}
+
 void set_ucontext_paramreg(void *vuc, uint64_t value)
 {
     ucontext_t *uc = (ucontext_t *) vuc;

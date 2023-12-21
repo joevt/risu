@@ -98,6 +98,9 @@ void send_response_byte(int sock, int resp);
 /* Move the PC past this faulting insn by adjusting ucontext. */
 void advance_pc(void *uc);
 
+/* Return the PC from a ucontext */
+uintptr_t get_uc_pc(void *uc, void *siaddr);
+
 /* Set the parameter register in a ucontext_t to the specified value.
  * (32-bit targets can ignore high 32 bits.)
  * vuc is a ucontext_t* cast to void*.
