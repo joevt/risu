@@ -594,6 +594,11 @@ int main(int argc, char **argv)
             } else {
                 comm_fd = open(trace_fn, O_RDONLY);
             }
+            if (comm_fd < 0) {
+                fprintf(stderr, "trace file \"%s\" cannot be opened\n", trace_fn);
+                perror("open");
+                exit(EXIT_FAILURE);
+            }
 #ifdef HAVE_ZLIB
             gz_trace_file = gzdopen(comm_fd, ismaster ? "wb9" : "rb");
 #endif
