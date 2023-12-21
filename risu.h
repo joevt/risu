@@ -19,6 +19,8 @@
 #include <getopt.h>
 #include <stdbool.h>
 
+#include "config.h"
+
 /* Extra option processing for architectures */
 extern const struct option * const arch_long_opts;
 extern const char * const arch_extra_help;

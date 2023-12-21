@@ -25,7 +25,6 @@
 #include <fcntl.h>
 #include <string.h>
 
-#include "config.h"
 #include "risu.h"
 
 enum {
