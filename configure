@@ -114,6 +114,10 @@ generate_config() {
         LDFLAGS=-lz
     fi
 
+    if ! check_type socklen_t; then
+        echo "typedef int socklen_t;" >> $cfg
+    fi
+
     echo "#endif /* CONFIG_H */" >> $cfg
 
     echo "...done"
