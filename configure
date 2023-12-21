@@ -58,6 +58,8 @@ guess_arch() {
         ARCH="m68k"
     elif check_define __powerpc64__ ; then
         ARCH="ppc64"
+    elif check_define __ppc__ ; then
+        ARCH="ppc64"
     elif check_define __s390x__ ; then
         ARCH="s390x"
     else
@@ -152,7 +154,7 @@ Some influential environment variables:
                prefixed with the given string.
 
   ARCH         force target architecture instead of trying to detect it.
-               Valid values=[arm|aarch64|m68k|ppc64|ppc64le|s390x]
+               Valid values=[arm|aarch64|m68k|ppc64|s390x]
 
   CC           C compiler command
   CFLAGS       C compiler flags

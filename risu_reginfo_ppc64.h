@@ -11,8 +11,8 @@
  *     based on Peter Maydell's risu_arm.c
  *****************************************************************************/
 
-#ifndef RISU_REGINFO_PPC64LE_H
-#define RISU_REGINFO_PPC64LE_H
+#ifndef RISU_REGINFO_PPC64_H
+#define RISU_REGINFO_PPC64_H
 
 struct reginfo {
     uint32_t faulting_insn;
@@ -25,4 +25,4 @@ struct reginfo {
     vrregset_t vrregs;
 };
 
-#endif /* RISU_REGINFO_PPC64LE_H */
+#endif /* RISU_REGINFO_PPC64_H */
