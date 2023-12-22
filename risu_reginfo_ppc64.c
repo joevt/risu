@@ -16,6 +16,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <sys/user.h>
 
 #include "risu.h"
@@ -24,12 +25,36 @@
 #define XER 37
 #define CCR 38
 
-const struct option * const arch_long_opts;
-const char * const arch_extra_help;
+static int ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
+static int fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
+static int fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
+static int vrregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
+
+static const struct option extra_opts[] = {
+    {"ccr_mask"   , required_argument, NULL, FIRST_ARCH_OPT + 0 },
+    {"fpscr_mask" , required_argument, NULL, FIRST_ARCH_OPT + 1 },
+    {"fpregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 2 },
+    {"vrregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 3 },
+    {0, 0, 0, 0}
+};
+
+const struct option * const arch_long_opts = &extra_opts[0];
+const char * const arch_extra_help =
+    "  --ccr_mask=MASK    Mask of CCR bits to compare\n"
+    "  --fpscr_mask=MASK  Mask of FPSCR bits to compare\n"
+    "  --fpregs_mask=MASK Mask of fpregs to compare\n"
+    "  --vrregs_mask=MASK Mask of vrregs to compare\n";
 
 void process_arch_opt(int opt, const char *arg)
 {
-    abort();
+    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 3);
+    int val = strtoul(arg, 0, 16);
+    switch (opt - FIRST_ARCH_OPT) {
+        case 0: ccr_mask    = val; break;
+        case 1: fpscr_mask  = val; break;
+        case 2: fpregs_mask = val; break;
+        case 3: vrregs_mask = val; break;
+    }
 }
 
 void arch_init(void)
@@ -98,13 +123,31 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         return 0;
     }
 
-    if ((m->gregs[CCR] & 0x10) != (a->gregs[CCR] & 0x10)) {
-        return 0;
+    if (m->gregs[CCR] != a->gregs[CCR]) {
+        if (
+            (m->gregs[CCR] & ccr_mask) == (a->gregs[CCR] & ccr_mask)
+        ) {
+            a->gregs[CCR] = m->gregs[CCR];
+        } else {
+            return 0;
+        }
+    }
+
+    if (m->fpscr != a->fpscr) {
+        if ((m->fpscr & fpscr_mask) == (a->fpscr & fpscr_mask)) {
+            a->fpscr = m->fpscr;
+        } else {
+            return 0;
+        }
     }
 
     for (i = 0; i < 32; i++) {
         if (m->fpregs[i] != a->fpregs[i]) {
-            return 0;
+            if ((1 << (31-i)) & ~fpregs_mask) {
+                a->fpregs[i] = m->fpregs[i];
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -113,8 +156,16 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         if (m->vrregs.vrregs[i][0] != a->vrregs.vrregs[i][0] ||
             m->vrregs.vrregs[i][1] != a->vrregs.vrregs[i][1] ||
             m->vrregs.vrregs[i][2] != a->vrregs.vrregs[i][2] ||
-            m->vrregs.vrregs[i][3] != a->vrregs.vrregs[i][3]) {
-            return 0;
+            m->vrregs.vrregs[i][3] != a->vrregs.vrregs[i][3]
+        ) {
+            if ((1 << (31-i)) & ~vrregs_mask) {
+                a->vrregs.vrregs[i][0] = m->vrregs.vrregs[i][0];
+                a->vrregs.vrregs[i][1] = m->vrregs.vrregs[i][1];
+                a->vrregs.vrregs[i][2] = m->vrregs.vrregs[i][2];
+                a->vrregs.vrregs[i][3] = m->vrregs.vrregs[i][3];
+            } else {
+                return 0;
+            }
         }
     }
 #endif
