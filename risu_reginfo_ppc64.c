@@ -78,8 +78,9 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 
     memset(ri, 0, sizeof(*ri));
 
-    ri->faulting_insn = *((uint32_t *) uc->uc_mcontext.regs->nip);
-    ri->nip = uc->uc_mcontext.regs->nip - image_start_address;
+    ri->faulting_insn = *((uint32_t *) get_uc_pc(uc, siaddr));
+    ri->prev_insn = *((uint32_t *) (get_uc_pc(uc, siaddr) - 4));
+    ri->nip = get_uc_pc(uc, siaddr) - image_start_address;
 
     for (i = 0; i < NGREG; i++) {
         ri->gregs[i] = uc->uc_mcontext.gp_regs[i];
