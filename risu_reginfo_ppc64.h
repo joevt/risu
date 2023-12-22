@@ -25,6 +25,7 @@
 struct reginfo {
     uint32_t faulting_insn;
     uint32_t prev_insn;
+    uint32_t second_prev_insn;
     reg_t nip;
     gregset_t gregs;
     uint64_t fpregs[32];
