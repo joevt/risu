@@ -18,19 +18,31 @@
 void advance_pc(void *vuc)
 {
     ucontext_t *uc = (ucontext_t *) vuc;
+#ifndef __APPLE__
     uc->uc_mcontext.regs->nip += 4;
+#else
+    uc->uc_mcontext->ss.srr0 += 4;
+#endif
 }
 
 uintptr_t get_uc_pc(void *vuc, void *siaddr)
 {
     ucontext_t *uc = (ucontext_t *) vuc;
+#ifndef __APPLE__
     return uc->uc_mcontext.regs->nip;
+#else
+    return uc->uc_mcontext->ss.srr0;
+#endif
 }
 
 void set_ucontext_paramreg(void *vuc, uint64_t value)
 {
     ucontext_t *uc = vuc;
+#ifndef __APPLE__
     uc->uc_mcontext.gp_regs[0] = value;
+#else
+    uc->uc_mcontext->ss.r0 = value;
+#endif
 }
 
 uint64_t get_reginfo_paramreg(struct reginfo *ri)
