@@ -1,0 +1,26 @@
+###############################################################################
+# Copyright (c) 2024 Joe van Tunen
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#      Joe van Tunen - initial implementation
+###############################################################################
+
+.mode ppc
+
+# Note: register r1 cannot be used because it is the stack pointer.
+
+SUBFMETEST PPC 011111 00101 00110 00000 1 011101000 1 \
+!memory { reg_from_values(6); }
+
+SUBFZETEST PPC 011111 00101 00110 00000 1 011001000 1 \
+!memory { reg_from_values(6); }
+
+SUBFETEST PPC 011111 00100 00101 00110 1 010001000 1 \
+!memory { reg_from_two_values(5,6); }
+
+SUBFICTEST PPC 01100000000000000000000000000000 \
+!memory { imm_test(oct('0b00100000101001100000000000000000'), 6); }
