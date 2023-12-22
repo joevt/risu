@@ -402,6 +402,7 @@ static int master(void)
         break;
 
     case RES_END:
+        fprintf(stderr, "done after %zd checkpoints\n", signal_count);
         close_comm();
         result = EXIT_SUCCESS;
         break;
@@ -455,6 +456,7 @@ static int apprentice(void)
         break;
 
     case RES_END:
+        fprintf(stderr, "done after %zd checkpoints\n", signal_count);
         result = EXIT_SUCCESS;
         break;
 
