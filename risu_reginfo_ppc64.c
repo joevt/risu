@@ -192,39 +192,39 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
 {
     int i;
 
-    fprintf(f, "  faulting insn 0x%x\n", ri->faulting_insn);
-    fprintf(f, "  prev insn     0x%x\n", ri->prev_insn);
-    fprintf(f, "  prev addr    0x%" PRIx64 "\n\n", ri->nip);
+    fprintf(f, "previous insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 4, ri->prev_insn);
+    fprintf(f, "faulting insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip, ri->faulting_insn);
+    fprintf(f, "\n");
 
     for (i = 0; i < 16; i++) {
-        fprintf(f, "\tr%2d: %16lx\tr%2d: %16lx\n", i, ri->gregs[i],
+        fprintf(f, "\tr%d%s : %0" PRIx "\tr%d : %0" PRIx "\n", i, i < 10 ? " " : "", ri->gregs[i],
                 i + 16, ri->gregs[i + 16]);
     }
 
     fprintf(f, "\n");
-    fprintf(f, "\tnip    : %16lx\n", ri->gregs[32]);
-    fprintf(f, "\tmsr    : %16lx\n", ri->gregs[33]);
-    fprintf(f, "\torig r3: %16lx\n", ri->gregs[34]);
-    fprintf(f, "\tctr    : %16lx\n", ri->gregs[35]);
-    fprintf(f, "\tlnk    : %16lx\n", ri->gregs[36]);
-    fprintf(f, "\txer    : %16lx\n", ri->gregs[37]);
-    fprintf(f, "\tccr    : %16lx\n", ri->gregs[38]);
-    fprintf(f, "\tmq     : %16lx\n", ri->gregs[39]);
-    fprintf(f, "\ttrap   : %16lx\n", ri->gregs[40]);
-    fprintf(f, "\tdar    : %16lx\n", ri->gregs[41]);
-    fprintf(f, "\tdsisr  : %16lx\n", ri->gregs[42]);
-    fprintf(f, "\tresult : %16lx\n", ri->gregs[43]);
-    fprintf(f, "\tdscr   : %16lx\n\n", ri->gregs[44]);
+    fprintf(f, "\tnip    : %0" PRIx "\n", ri->gregs[32]);
+    fprintf(f, "\tmsr    : %0" PRIx "\n", ri->gregs[33]);
+    fprintf(f, "\torig r3: %0" PRIx "\n", ri->gregs[34]);
+    fprintf(f, "\tctr    : %0" PRIx "\n", ri->gregs[35]);
+    fprintf(f, "\tlnk    : %0" PRIx "\n", ri->gregs[36]);
+    fprintf(f, "\txer    : %0" PRIx "\n", ri->gregs[37]);
+    fprintf(f, "\tccr    : %0" PRIx "\n", ri->gregs[38]);
+    fprintf(f, "\tmq     : %0" PRIx "\n", ri->gregs[39]);
+    fprintf(f, "\ttrap   : %0" PRIx "\n", ri->gregs[40]);
+    fprintf(f, "\tdar    : %0" PRIx "\n", ri->gregs[41]);
+    fprintf(f, "\tdsisr  : %0" PRIx "\n", ri->gregs[42]);
+    fprintf(f, "\tresult : %0" PRIx "\n", ri->gregs[43]);
+    fprintf(f, "\tdscr   : %0" PRIx "\n\n", ri->gregs[44]);
 
     for (i = 0; i < 16; i++) {
-        fprintf(f, "\tf%2d: %016lx\tf%2d: %016lx\n", i, ri->fpregs[i],
+        fprintf(f, "\tf%d%s : %016" PRIx64 "\tf%d : %016" PRIx64 "\n", i, i < 10 ? " " : "", ri->fpregs[i],
                 i + 16, ri->fpregs[i + 16]);
     }
-    fprintf(f, "\tfpscr: %016lx\n\n", ri->fpscr);
+    fprintf(f, "\tfpscr : %0" PRIx "\n\n", ri->fpscr);
 
 #ifdef VRREGS
     for (i = 0; i < 32; i++) {
-        fprintf(f, "vr%02d: %8x, %8x, %8x, %8x\n", i,
+        fprintf(f, "\tvr%d%s : %08x, %08x, %08x, %08x\n", i, i < 10 ? " " : "",
                 ri->vrregs.vrregs[i][0], ri->vrregs.vrregs[i][1],
                 ri->vrregs.vrregs[i][2], ri->vrregs.vrregs[i][3]);
     }
@@ -242,26 +242,26 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
         }
 
         if (m->gregs[i] != a->gregs[i]) {
-            fprintf(f, "Mismatch: Register r%d\n", i);
-            fprintf(f, "master: [%lx] - apprentice: [%lx]\n",
+            fprintf(f, "Mismatch: Register r%d ", i);
+            fprintf(f, "master: [%0" PRIx "] - apprentice: [%0" PRIx "]\n",
                     m->gregs[i], a->gregs[i]);
         }
     }
 
     if (m->gregs[XER] != a->gregs[XER]) {
-        fprintf(f, "Mismatch: XER\n");
-        fprintf(f, "m: [%lx] != a: [%lx]\n", m->gregs[XER], a->gregs[XER]);
+        fprintf(f, "Mismatch: XER ");
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[XER], a->gregs[XER]);
     }
 
     if (m->gregs[CCR] != a->gregs[CCR]) {
-        fprintf(f, "Mismatch: Cond. Register\n");
-        fprintf(f, "m: [%lx] != a: [%lx]\n", m->gregs[CCR], a->gregs[CCR]);
+        fprintf(f, "Mismatch: Cond. Register ");
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[CCR], a->gregs[CCR]);
     }
 
     for (i = 0; i < 32; i++) {
         if (m->fpregs[i] != a->fpregs[i]) {
-            fprintf(f, "Mismatch: Register f%d\n", i);
-            fprintf(f, "m: [%016lx] != a: [%016lx]\n",
+            fprintf(f, "Mismatch: Register f%d ", i);
+            fprintf(f, "m: [%016" PRIx64 "] != a: [%016" PRIx64 "]\n",
                     m->fpregs[i], a->fpregs[i]);
         }
     }
@@ -273,8 +273,8 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
             m->vrregs.vrregs[i][2] != a->vrregs.vrregs[i][2] ||
             m->vrregs.vrregs[i][3] != a->vrregs.vrregs[i][3]) {
 
-            fprintf(f, "Mismatch: Register vr%d\n", i);
-            fprintf(f, "m: [%x, %x, %x, %x] != a: [%x, %x, %x, %x]\n",
+            fprintf(f, "Mismatch: Register vr%d ", i);
+            fprintf(f, "m: [%08x, %08x, %08x, %08x] != a: [%08x, %08x, %08x, %08x]\n",
                     m->vrregs.vrregs[i][0], m->vrregs.vrregs[i][1],
                     m->vrregs.vrregs[i][2], m->vrregs.vrregs[i][3],
                     a->vrregs.vrregs[i][0], a->vrregs.vrregs[i][1],

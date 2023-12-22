@@ -14,13 +14,21 @@
 #ifndef RISU_REGINFO_PPC64_H
 #define RISU_REGINFO_PPC64_H
 
+#if __LP64__
+    typedef uint64_t reg_t;
+    #define PRIx "16" PRIx64
+#else
+    typedef uint32_t reg_t;
+    #define PRIx "8" PRIx32
+#endif
+
 struct reginfo {
     uint32_t faulting_insn;
     uint32_t prev_insn;
-    uint64_t nip;
+    reg_t nip;
     gregset_t gregs;
     uint64_t fpregs[32];
-    uint64_t fpscr;
+    reg_t fpscr;
 #ifdef VRREGS
     vrregset_t vrregs;
 #endif
