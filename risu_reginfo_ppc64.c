@@ -12,6 +12,7 @@
  *****************************************************************************/
 
 #include <stdio.h>
+#include <signal.h>
 #include <ucontext.h>
 #include <string.h>
 #include <math.h>
@@ -71,10 +72,74 @@ int reginfo_size(struct reginfo *ri)
     return sizeof(*ri);
 }
 
+#ifdef __APPLE__
+size_t mcontext_min_size = -1;
+size_t mcontext_max_size = 0;
+#endif
+
+#if defined(__APPLE__) && defined(VRREGS)
+static void savevec(void *vrregs, void *vscr, void *vrsave)
+{
+    assert((((int)vrregs & 15) | ((int)vscr & 15)) == 0);
+    asm(
+        "\n\t"
+        "stvx v0, 0, %[addr]\n\t"
+        "mfvscr v0\n\t"
+        "stvx v0, 0, %[vscr]\n\t"
+        "lvx  v0, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v1, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v2, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v3, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v4, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v5, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v6, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v7, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v8, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v9, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v10, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v11, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v12, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v13, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v14, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v15, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v16, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v17, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v18, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v19, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v20, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v21, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v22, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v23, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v24, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v25, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v26, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v27, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v28, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v29, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v30, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "stvx v31, 0, %[addr]\n\taddi %[addr], %[addr], 16\n\t"
+        "mfspr %[addr], 256\n\t" /* vrsave */
+        "stw %[addr], 0(%[vrsave])\n\t"
+        : [addr] "+b" (vrregs) /* can be r1-r31 */
+        : [vrsave] "b" (vrsave) /* can be r1-r31 */
+        , [vscr] "b" (vscr) /* can be r1-r31 */
+    );
+}
+#endif
+
 /* reginfo_init: initialize with a ucontext */
 void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 {
+#ifndef __APPLE__
     int i;
+#else
+    if (uc->uc_mcsize < mcontext_min_size) {
+        mcontext_min_size = uc->uc_mcsize;
+    }
+    if (uc->uc_mcsize > mcontext_max_size) {
+        mcontext_max_size = uc->uc_mcsize;
+    }
+#endif
 
     memset(ri, 0, sizeof(*ri));
 
@@ -83,18 +148,89 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
     ri->second_prev_insn = *((uint32_t *) (get_uc_pc(uc, siaddr) - 8));
     ri->nip = get_uc_pc(uc, siaddr) - image_start_address;
 
+#ifndef __APPLE__
     for (i = 0; i < NGREG; i++) {
         ri->gregs[i] = uc->uc_mcontext.gp_regs[i];
     }
+#else
+    ri->gregs[ 0] = uc->uc_mcontext->ss.r0;
+    ri->gregs[ 1] = uc->uc_mcontext->ss.r1;
+    ri->gregs[ 2] = uc->uc_mcontext->ss.r2;
+    ri->gregs[ 3] = uc->uc_mcontext->ss.r3;
+    ri->gregs[ 4] = uc->uc_mcontext->ss.r4;
+    ri->gregs[ 5] = uc->uc_mcontext->ss.r5;
+    ri->gregs[ 6] = uc->uc_mcontext->ss.r6;
+    ri->gregs[ 7] = uc->uc_mcontext->ss.r7;
+    ri->gregs[ 8] = uc->uc_mcontext->ss.r8;
+    ri->gregs[ 9] = uc->uc_mcontext->ss.r9;
+    ri->gregs[10] = uc->uc_mcontext->ss.r10;
+    ri->gregs[11] = uc->uc_mcontext->ss.r11;
+    ri->gregs[12] = uc->uc_mcontext->ss.r12;
+    ri->gregs[13] = uc->uc_mcontext->ss.r13;
+    ri->gregs[14] = uc->uc_mcontext->ss.r14;
+    ri->gregs[15] = uc->uc_mcontext->ss.r15;
+    ri->gregs[16] = uc->uc_mcontext->ss.r16;
+    ri->gregs[17] = uc->uc_mcontext->ss.r17;
+    ri->gregs[18] = uc->uc_mcontext->ss.r18;
+    ri->gregs[19] = uc->uc_mcontext->ss.r19;
+    ri->gregs[20] = uc->uc_mcontext->ss.r20;
+    ri->gregs[21] = uc->uc_mcontext->ss.r21;
+    ri->gregs[22] = uc->uc_mcontext->ss.r22;
+    ri->gregs[23] = uc->uc_mcontext->ss.r23;
+    ri->gregs[24] = uc->uc_mcontext->ss.r24;
+    ri->gregs[25] = uc->uc_mcontext->ss.r25;
+    ri->gregs[26] = uc->uc_mcontext->ss.r26;
+    ri->gregs[27] = uc->uc_mcontext->ss.r27;
+    ri->gregs[28] = uc->uc_mcontext->ss.r28;
+    ri->gregs[29] = uc->uc_mcontext->ss.r29;
+    ri->gregs[30] = uc->uc_mcontext->ss.r30;
+    ri->gregs[31] = uc->uc_mcontext->ss.r31;
+    ri->gregs[32] = get_uc_pc(uc, siaddr); /* NIP */
+    ri->gregs[33] = uc->uc_mcontext->ss.srr1; /* MSR */
+    ri->gregs[34] = 0; /* orig r3 */
+    ri->gregs[35] = uc->uc_mcontext->ss.ctr;
+    ri->gregs[36] = uc->uc_mcontext->ss.lr;
+    ri->gregs[37] = uc->uc_mcontext->ss.xer;
+    ri->gregs[38] = uc->uc_mcontext->ss.cr;
+    ri->gregs[39] = uc->uc_mcontext->ss.mq;
+    ri->gregs[40] = 0; /* TRAP */
+    ri->gregs[41] = uc->uc_mcontext->es.dar; /* DAR */
+    ri->gregs[42] = uc->uc_mcontext->es.dsisr; /* DSISR */
+    ri->gregs[43] = 0; /* RESULT */
+    ri->gregs[44] = 0; /* DSCR */
+#endif
 
+#ifndef __APPLE__
     memcpy(ri->fpregs, uc->uc_mcontext.fp_regs, 32 * sizeof(double));
     ri->fpscr = uc->uc_mcontext.fp_regs[32];
+#else
+    memcpy(ri->fpregs, uc->uc_mcontext->fs.fpregs, 32 * sizeof(double));
+    ri->fpscr = uc->uc_mcontext->fs.fpscr;
+#endif
 
 #ifdef VRREGS
+#ifndef __APPLE__
     memcpy(ri->vrregs.vrregs, uc->uc_mcontext.v_regs->vrregs,
            sizeof(ri->vrregs.vrregs[0]) * 32);
     ri->vrregs.vscr = uc->uc_mcontext.v_regs->vscr;
     ri->vrregs.vrsave = uc->uc_mcontext.v_regs->vrsave;
+#else
+    if (uc->uc_mcsize >= (sizeof(struct mcontext))) {
+        memcpy(ri->vrregs.vrregs, uc->uc_mcontext->vs.save_vr,
+               sizeof(ri->vrregs.vrregs[0]) * 32);
+        memcpy(ri->vrregs.vscr, uc->uc_mcontext->vs.save_vscr,
+               sizeof(ri->vrregs.vscr[0]) * 4);
+        ri->vrregs.save_vrvalid = uc->uc_mcontext->vs.save_vrvalid;
+        ri->vrregs.vrsave2 = 0;
+    }
+    else if (vrregs_mask) {
+        static vrregset_t vrregs __attribute__((aligned(16)));
+        savevec(&vrregs.vrregs, &vrregs.vscr, &vrregs.vrsave2);
+        memcpy(&ri->vrregs, &vrregs, sizeof(vrregs));
+        ri->vrregs.save_vrvalid = 0;
+    }
+    ri->vrregs.vrsave = uc->uc_mcontext->ss.vrsave;
+#endif
 #endif
 
 #ifdef SAVESTACK
@@ -207,17 +343,21 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
     fprintf(f, "\n");
     fprintf(f, "\tnip    : %0" PRIx "\n", ri->gregs[32]);
     fprintf(f, "\tmsr    : %0" PRIx "\n", ri->gregs[33]);
+#ifndef __APPLE__
     fprintf(f, "\torig r3: %0" PRIx "\n", ri->gregs[34]);
+#endif
     fprintf(f, "\tctr    : %0" PRIx "\n", ri->gregs[35]);
     fprintf(f, "\tlnk    : %0" PRIx "\n", ri->gregs[36]);
     fprintf(f, "\txer    : %0" PRIx "\n", ri->gregs[37]);
     fprintf(f, "\tccr    : %0" PRIx "\n", ri->gregs[38]);
     fprintf(f, "\tmq     : %0" PRIx "\n", ri->gregs[39]);
+#ifndef __APPLE__
     fprintf(f, "\ttrap   : %0" PRIx "\n", ri->gregs[40]);
     fprintf(f, "\tdar    : %0" PRIx "\n", ri->gregs[41]);
     fprintf(f, "\tdsisr  : %0" PRIx "\n", ri->gregs[42]);
     fprintf(f, "\tresult : %0" PRIx "\n", ri->gregs[43]);
     fprintf(f, "\tdscr   : %0" PRIx "\n\n", ri->gregs[44]);
+#endif
 
     for (i = 0; i < 16; i++) {
         fprintf(f, "\tf%d%s : %016" PRIx64 "\tf%d : %016" PRIx64 "\n", i, i < 10 ? " " : "", ri->fpregs[i],
@@ -231,6 +371,10 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
                 ri->vrregs.vrregs[i][0], ri->vrregs.vrregs[i][1],
                 ri->vrregs.vrregs[i][2], ri->vrregs.vrregs[i][3]);
     }
+#ifdef __APPLE__
+    fprintf(f, "\tvrsave2 : %08x\n", ri->vrregs.vrsave2);
+    fprintf(f, "\tsave_vrvalid : %08x\n\n", ri->vrregs.save_vrvalid);
+#endif
 #endif
 
     return !ferror(f);

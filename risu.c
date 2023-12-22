@@ -597,6 +597,11 @@ static struct option * setup_options(char **short_opts)
     return lopts;
 }
 
+#if __APPLE__
+extern size_t mcontext_min_size;
+extern size_t mcontext_max_size;
+#endif
+
 int main(int argc, char **argv)
 {
     /* some handy defaults to make testing easier */
@@ -703,5 +708,18 @@ int main(int argc, char **argv)
         fprintf(stderr, "starting apprentice\n");
         result = apprentice();
     }
+
+#if __APPLE__
+    fprintf(stderr, "size:%d min:%d max:%d thread:%d float:%d exception:%d vector:%d\n",
+        (int)sizeof(struct mcontext), /* ppc: 1032 */
+        (int)mcontext_min_size, /* ppc: 456 before vrsave is set to -1 */
+        (int)mcontext_max_size, /* ppc: 1032 after vrsave is set to -1 */
+        (int)sizeof(ppc_thread_state_t), /* ppc: 160 */
+        (int)sizeof(ppc_float_state_t), /* ppc: 264 */
+        (int)sizeof(ppc_exception_state_t), /* ppc: 32 */
+        (int)sizeof(ppc_vector_state_t) /* ppc: 576 */
+    );
+#endif
+
     return result;
 }
