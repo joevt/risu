@@ -145,7 +145,7 @@ void reginfo_init(struct reginfo *ri, ucontext_t *context, void *siaddr)
         struct fpu_context *fpu_ctx = (struct fpu_context *)((char *)info +
                                       sizeof(struct sctx_info));
         for(i = 0; i < 32; i++) {
-	    ri->vregs[4 * i] = fpu_ctx->regs[4 * i];
+            ri->vregs[4 * i] = fpu_ctx->regs[4 * i];
         }
         ri->fcsr = fpu_ctx->fcsr;
         ri->fcc = fpu_ctx->fcc;

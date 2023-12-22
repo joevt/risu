@@ -52,7 +52,7 @@ static gzFile gz_trace_file;
 
 static sigjmp_buf jmpbuf;
 
-#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 /* I/O functions */
 

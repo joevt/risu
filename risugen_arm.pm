@@ -359,7 +359,7 @@ sub write_random_fpreg_var($)
     my $randomize_low = 0;
 
     if ($precision != 1 && $precision != 2 && $precision != 4) {
-	die "write_random_fpreg: invalid precision.\n";
+        die "write_random_fpreg: invalid precision.\n";
     }
 
     my ($low, $high);
@@ -371,7 +371,7 @@ sub write_random_fpreg_var($)
     } elsif ($r < 10) {
         # NaN (5%)
         # (plus a tiny chance of generating +-Inf)
-	$randomize_low = 1;
+        $randomize_low = 1;
         $high = rand(0xffffffff) | 0x7ff00000;
     } elsif ($r < 15) {
         # Infinity (5%)
@@ -381,20 +381,20 @@ sub write_random_fpreg_var($)
     } elsif ($r < 30) {
         # Denormalized number (15%)
         # (plus tiny chance of +-0)
-	$randomize_low = 1;
+        $randomize_low = 1;
         $high = rand(0xffffffff) & ~0x7ff00000;
     } else {
         # Normalized number (70%)
         # (plus a small chance of the other cases)
-	$randomize_low = 1;
+        $randomize_low = 1;
         $high = rand(0xffffffff);
     }
 
     for (my $i = 1; $i < $precision; $i++) {
-	if ($randomize_low) {
-	    $low = rand(0xffffffff);
-	}
-	insn32($low);
+        if ($randomize_low) {
+            $low = rand(0xffffffff);
+        }
+        insn32($low);
     }
     insn32($high);
 }
@@ -526,19 +526,19 @@ sub write_random_aarch64_fpdata()
     };
 
     for (my $rt = 0; $rt <= 31; $rt++) {
-	write_random_fpreg_var(4); # quad
+        write_random_fpreg_var(4); # quad
     }
 
     if ($enable_aarch64_ld1) {
-	# enable only when we have ld1
-	for (my $rt = 0; $rt <= 31; $rt += 4) {
-	    insn32(0x4cdf2c00 | $rt); # ld1 {v0.2d-v3.2d}, [x0], #64
-	}
+        # enable only when we have ld1
+        for (my $rt = 0; $rt <= 31; $rt += 4) {
+            insn32(0x4cdf2c00 | $rt); # ld1 {v0.2d-v3.2d}, [x0], #64
+        }
     } else {
-	# temporarily use LDP instead
-	for (my $rt = 0; $rt <= 31; $rt += 2) {
-	    insn32(0xacc10000 | ($rt + 1) << 10 | ($rt)); # ldp q0,q1,[x0],#32
-	}
+        # temporarily use LDP instead
+        for (my $rt = 0; $rt <= 31; $rt += 2) {
+            insn32(0xacc10000 | ($rt + 1) << 10 | ($rt)); # ldp q0,q1,[x0],#32
+        }
     }
 }
 

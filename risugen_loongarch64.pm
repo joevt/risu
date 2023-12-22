@@ -126,7 +126,7 @@ sub write_mov_ri($$)
         # ori rd, rd, ui12
         insn32(0x03800000 | ($imm & 0xfff) << 10 | $rd << 5 | $rd);
     } else {
-	die "unhandled immediate load";
+        die "unhandled immediate load";
     }
 }
 
@@ -167,9 +167,9 @@ sub reg_plus_reg($$@)
             write_mov_ri(4, 0);
         }
     } else {
-	if ($savedidx) {
+        if ($savedidx) {
             write_mov_ri($idx, 0);
-	}
+        }
     }
 
     if (grep $_ == $base, @trashed) {
