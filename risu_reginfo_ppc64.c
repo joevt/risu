@@ -63,10 +63,12 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
     memcpy(ri->fpregs, uc->uc_mcontext.fp_regs, 32 * sizeof(double));
     ri->fpscr = uc->uc_mcontext.fp_regs[32];
 
+#ifdef VRREGS
     memcpy(ri->vrregs.vrregs, uc->uc_mcontext.v_regs->vrregs,
            sizeof(ri->vrregs.vrregs[0]) * 32);
     ri->vrregs.vscr = uc->uc_mcontext.v_regs->vscr;
     ri->vrregs.vrsave = uc->uc_mcontext.v_regs->vrsave;
+#endif
 }
 
 /* reginfo_update: update the context */
@@ -102,6 +104,7 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         }
     }
 
+#ifdef VRREGS
     for (i = 0; i < 32; i++) {
         if (m->vrregs.vrregs[i][0] != a->vrregs.vrregs[i][0] ||
             m->vrregs.vrregs[i][1] != a->vrregs.vrregs[i][1] ||
@@ -110,6 +113,7 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
             return 0;
         }
     }
+#endif
     return 1;
 }
 
@@ -148,11 +152,13 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
     }
     fprintf(f, "\tfpscr: %016lx\n\n", ri->fpscr);
 
+#ifdef VRREGS
     for (i = 0; i < 32; i++) {
         fprintf(f, "vr%02d: %8x, %8x, %8x, %8x\n", i,
                 ri->vrregs.vrregs[i][0], ri->vrregs.vrregs[i][1],
                 ri->vrregs.vrregs[i][2], ri->vrregs.vrregs[i][3]);
     }
+#endif
 
     return !ferror(f);
 }
@@ -190,6 +196,7 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
         }
     }
 
+#ifdef VRREGS
     for (i = 0; i < 32; i++) {
         if (m->vrregs.vrregs[i][0] != a->vrregs.vrregs[i][0] ||
             m->vrregs.vrregs[i][1] != a->vrregs.vrregs[i][1] ||
@@ -204,5 +211,6 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
                     a->vrregs.vrregs[i][2], a->vrregs.vrregs[i][3]);
         }
     }
+#endif
     return !ferror(f);
 }

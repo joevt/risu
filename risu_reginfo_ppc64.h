@@ -21,7 +21,9 @@ struct reginfo {
     gregset_t gregs;
     uint64_t fpregs[32];
     uint64_t fpscr;
+#ifdef VRREGS
     vrregset_t vrregs;
+#endif
 };
 
 #endif /* RISU_REGINFO_PPC64_H */
