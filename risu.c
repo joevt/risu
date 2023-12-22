@@ -376,6 +376,16 @@ static void load_image(const char *imgfile)
     image_start_address = (uintptr_t) addr;
 }
 
+static void close_comm()
+{
+#ifdef HAVE_ZLIB
+    if (trace && comm_fd != STDOUT_FILENO) {
+        gzclose(gz_trace_file);
+    }
+#endif
+    close(comm_fd);
+}
+
 static int master(void)
 {
     int result;
@@ -392,12 +402,7 @@ static int master(void)
         break;
 
     case RES_END:
-#ifdef HAVE_ZLIB
-        if (trace && comm_fd != STDOUT_FILENO) {
-            gzclose(gz_trace_file);
-        }
-#endif
-        close(comm_fd);
+        close_comm();
         result = EXIT_SUCCESS;
         break;
 
@@ -408,6 +413,7 @@ static int master(void)
 
     default:
         fprintf(stderr, "unexpected result %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", res, signal_pc - image_start_address, signal_count);
+        close_comm();
         result = EXIT_FAILURE;
         break;
     }
