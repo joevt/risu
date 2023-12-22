@@ -402,12 +402,12 @@ static int master(void)
         break;
 
     case RES_BAD_IO:
-        fprintf(stderr, "i/o error after %zd checkpoints\n", signal_count);
+        fprintf(stderr, "i/o error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
     default:
-        fprintf(stderr, "unexpected result %d\n", res);
+        fprintf(stderr, "unexpected result %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", res, signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
     }
@@ -453,7 +453,7 @@ static int apprentice(void)
         break;
 
     case RES_MISMATCH_REG:
-        fprintf(stderr, "Mismatch reg after %zd checkpoints\n", signal_count);
+        fprintf(stderr, "Mismatch reg at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
         fprintf(stderr, "master reginfo:\n");
         reginfo_dump(&ri[MASTER], stderr);
         fprintf(stderr, "apprentice reginfo:\n");
@@ -463,42 +463,43 @@ static int apprentice(void)
         break;
 
     case RES_MISMATCH_MEM:
-        fprintf(stderr, "Mismatch mem after %zd checkpoints\n", signal_count);
+        fprintf(stderr, "Mismatch mem at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_MISMATCH_OP:
         /* Out of sync, but both opcodes are known valid. */
-        fprintf(stderr, "Mismatch header after %zd checkpoints\n"
+        fprintf(stderr, "Mismatch header at image + 0x%"PRIxPTR" after %zd checkpoints\n"
                 "mismatch detail (master : apprentice):\n"
                 "  opcode: %s vs %s\n",
+                signal_pc - image_start_address,
                 signal_count, op_name(header.risu_op),
                 op_name(get_risuop(&ri[APPRENTICE])));
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_IO:
-        fprintf(stderr, "I/O error\n");
+        fprintf(stderr, "i/o error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_MAGIC:
-        fprintf(stderr, "Unexpected magic number: %#08x\n", header.magic);
+        fprintf(stderr, "Unexpected magic number: %#08x at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.magic, signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE:
-        fprintf(stderr, "Unexpected payload size: %u\n", header.size);
+        fprintf(stderr, "Unexpected payload size: %u at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_OP:
-        fprintf(stderr, "Unexpected opcode: %d\n", header.risu_op);
+        fprintf(stderr, "Unexpected opcode: %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.risu_op, signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
     default:
-        fprintf(stderr, "Unexpected result %d\n", res);
+        fprintf(stderr, "Unexpected result %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", res, signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
     }
