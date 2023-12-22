@@ -1,0 +1,259 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		634579C42B33A6E700AB1D07 /* risu_reginfo_ppc64.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A602B29751B00E71775 /* risu_reginfo_ppc64.c */; };
+		634579C52B33A6EB00AB1D07 /* risu_ppc64.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A622B29751B00E71775 /* risu_ppc64.c */; };
+		6376A9B62B2B210A00E760F5 /* getopt.c in Sources */ = {isa = PBXBuildFile; fileRef = 6376A9B42B2B210A00E760F5 /* getopt.c */; };
+		63802A652B29751B00E71775 /* risu.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A5F2B29751B00E71775 /* risu.c */; };
+		63802A6A2B29751B00E71775 /* comms.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A642B29751B00E71775 /* comms.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DD76FAF0486AB0100D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		6376A9B42B2B210A00E760F5 /* getopt.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = getopt.c; path = compat/getopt.c; sourceTree = "<group>"; };
+		6376A9B52B2B210A00E760F5 /* getopt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = getopt.h; path = compat/getopt.h; sourceTree = "<group>"; };
+		63802A5B2B29751B00E71775 /* risu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = risu.h; sourceTree = SOURCE_ROOT; };
+		63802A5C2B29751B00E71775 /* risu_reginfo_ppc64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = risu_reginfo_ppc64.h; sourceTree = SOURCE_ROOT; };
+		63802A5E2B29751B00E71775 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = build/ppc/config.h; sourceTree = "<group>"; };
+		63802A5F2B29751B00E71775 /* risu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = risu.c; sourceTree = SOURCE_ROOT; };
+		63802A602B29751B00E71775 /* risu_reginfo_ppc64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = risu_reginfo_ppc64.c; sourceTree = SOURCE_ROOT; };
+		63802A622B29751B00E71775 /* risu_ppc64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = risu_ppc64.c; sourceTree = SOURCE_ROOT; };
+		63802A642B29751B00E71775 /* comms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = comms.c; sourceTree = SOURCE_ROOT; };
+		63D762FF2B29C2D3001E8BFA /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = /usr/lib/libz.dylib; sourceTree = "<absolute>"; };
+		8DD76FB20486AB0100D96B5E /* risu */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = risu; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8DD76FAD0486AB0100D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* risuproject */ = {
+			isa = PBXGroup;
+			children = (
+				08FB7795FE84155DC02AAC07 /* Source */,
+				63D762FD2B29C1DD001E8BFA /* Libraries */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = risuproject;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				63802A5B2B29751B00E71775 /* risu.h */,
+				63802A5C2B29751B00E71775 /* risu_reginfo_ppc64.h */,
+				63802A5E2B29751B00E71775 /* config.h */,
+				63802A5F2B29751B00E71775 /* risu.c */,
+				63802A602B29751B00E71775 /* risu_reginfo_ppc64.c */,
+				63802A622B29751B00E71775 /* risu_ppc64.c */,
+				63802A642B29751B00E71775 /* comms.c */,
+				6376A9B42B2B210A00E760F5 /* getopt.c */,
+				6376A9B52B2B210A00E760F5 /* getopt.h */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8DD76FB20486AB0100D96B5E /* risu */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		63D762FD2B29C1DD001E8BFA /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				63D762FF2B29C2D3001E8BFA /* libz.dylib */,
+			);
+			name = Libraries;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8DD76FA90486AB0100D96B5E /* risu */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB928508733DD80010E9CD /* Build configuration list for PBXNativeTarget "risu" */;
+			buildPhases = (
+				8DD76FAB0486AB0100D96B5E /* Sources */,
+				8DD76FAD0486AB0100D96B5E /* Frameworks */,
+				8DD76FAF0486AB0100D96B5E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = risu;
+			productInstallPath = "$(HOME)/bin";
+			productName = risuproject;
+			productReference = 8DD76FB20486AB0100D96B5E /* risu */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB928908733DD80010E9CD /* Build configuration list for PBXProject "risu" */;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 08FB7794FE84155DC02AAC07 /* risuproject */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76FA90486AB0100D96B5E /* risu */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8DD76FAB0486AB0100D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				63802A652B29751B00E71775 /* risu.c in Sources */,
+				63802A6A2B29751B00E71775 /* comms.c in Sources */,
+				6376A9B62B2B210A00E760F5 /* getopt.c in Sources */,
+				634579C42B33A6E700AB1D07 /* risu_reginfo_ppc64.c in Sources */,
+				634579C52B33A6EB00AB1D07 /* risu_ppc64.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB928608733DD80010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = 4.0;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = risu;
+			};
+			name = Debug;
+		};
+		1DEB928708733DD80010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				GCC_VERSION = 4.0;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = risu;
+			};
+			name = Release;
+		};
+		1DEB928A08733DD80010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = ppc7400;
+				GCC_ALTIVEC_EXTENSIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					compat,
+					build/ppc,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.2;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-DARCH=ppc64",
+					"-DSAVESTACK_no",
+					"-DVRREGS_no",
+					"-save-temps",
+				);
+				PREBINDING = NO;
+				SDKROOT = /Developer/SDKs/MacOSX10.3.9.sdk;
+			};
+			name = Debug;
+		};
+		1DEB928B08733DD80010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = ppc7400;
+				GCC_ALTIVEC_EXTENSIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					compat,
+					build/ppc,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.2;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-DARCH=ppc64",
+					"-DSAVESTACK_no",
+					"-DVRREGS_no",
+					"-save-temps",
+				);
+				PREBINDING = NO;
+				SDKROOT = /Developer/SDKs/MacOSX10.3.9.sdk;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB928508733DD80010E9CD /* Build configuration list for PBXNativeTarget "risu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB928608733DD80010E9CD /* Debug */,
+				1DEB928708733DD80010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB928908733DD80010E9CD /* Build configuration list for PBXProject "risu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB928A08733DD80010E9CD /* Debug */,
+				1DEB928B08733DD80010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}
