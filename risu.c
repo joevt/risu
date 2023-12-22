@@ -178,7 +178,12 @@ static void master_sigill(int sig, siginfo_t *si, void *uc)
     RisuResult r;
     signal_count++;
 
-    r = send_register_info(uc, si->si_addr);
+    if (sig == SIGBUS) {
+        r = RES_SIGBUS;
+    }
+    else {
+        r = send_register_info(uc, si->si_addr);
+    }
     if (r == RES_OK) {
         advance_pc(uc);
     } else {
@@ -318,7 +323,12 @@ static void apprentice_sigill(int sig, siginfo_t *si, void *uc)
     RisuResult r;
     signal_count++;
 
-    r = recv_and_compare_register_info(uc, si->si_addr);
+    if (sig == SIGBUS) {
+        r = RES_SIGBUS;
+    }
+    else {
+        r = recv_and_compare_register_info(uc, si->si_addr);
+    }
     if (r == RES_OK) {
         advance_pc(uc);
     } else {
@@ -336,6 +346,10 @@ static void set_sigill_handler(void (*fn) (int, siginfo_t *, void *))
     sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGILL, &sa, 0) != 0) {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if (sigaction(SIGBUS, &sa, 0) != 0) {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
@@ -409,6 +423,12 @@ static int master(void)
 
     case RES_BAD_IO:
         fprintf(stderr, "i/o error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        result = EXIT_FAILURE;
+        break;
+
+    case RES_SIGBUS:
+        fprintf(stderr, "bus error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        close_comm();
         result = EXIT_FAILURE;
         break;
 
@@ -503,6 +523,11 @@ static int apprentice(void)
 
     case RES_BAD_OP:
         fprintf(stderr, "Unexpected opcode: %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.risu_op, signal_pc - image_start_address, signal_count);
+        result = EXIT_FAILURE;
+        break;
+
+    case RES_SIGBUS:
+        fprintf(stderr, "bus error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 

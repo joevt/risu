@@ -67,6 +67,7 @@ typedef enum {
     RES_BAD_MAGIC,
     RES_BAD_SIZE,
     RES_BAD_OP,
+    RES_SIGBUS,
 } RisuResult;
 
 /* The memory block should be this long */
