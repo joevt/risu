@@ -18,7 +18,6 @@ struct reginfo {
     uint32_t faulting_insn;
     uint32_t prev_insn;
     uint64_t nip;
-    uint64_t prev_addr;
     gregset_t gregs;
     uint64_t fpregs[32];
     uint64_t fpscr;
