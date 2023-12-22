@@ -80,6 +80,7 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 
     ri->faulting_insn = *((uint32_t *) get_uc_pc(uc, siaddr));
     ri->prev_insn = *((uint32_t *) (get_uc_pc(uc, siaddr) - 4));
+    ri->second_prev_insn = *((uint32_t *) (get_uc_pc(uc, siaddr) - 8));
     ri->nip = get_uc_pc(uc, siaddr) - image_start_address;
 
     for (i = 0; i < NGREG; i++) {
@@ -193,6 +194,7 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
 {
     int i;
 
+    fprintf(f, "2nd prev insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 8, ri->second_prev_insn);
     fprintf(f, "previous insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 4, ri->prev_insn);
     fprintf(f, "faulting insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip, ri->faulting_insn);
     fprintf(f, "\n");
