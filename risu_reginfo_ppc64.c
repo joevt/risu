@@ -241,6 +241,28 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 /* reginfo_update: update the context */
 void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 {
+#ifndef __APPLE__
+    uc->uc_mcontext.gp_regs[38] = ri->gregs[38];
+#else
+    uc->uc_mcontext->ss.cr = ri->gregs[38];
+#endif
+
+#ifndef __APPLE__
+    memcpy(uc->uc_mcontext.fp_regs, ri->fpregs, 32 * sizeof(double));
+    uc->uc_mcontext.fp_regs[32] = ri->fpscr;
+#else
+    memcpy(uc->uc_mcontext->fs.fpregs, ri->fpregs, 32 * sizeof(double));
+    uc->uc_mcontext->fs.fpscr = ri->fpscr;
+#endif
+
+#ifdef VRREGS
+#ifndef __APPLE__
+    uc->uc_mcontext.v_regs->vscr = ri->vrregs.vscr;
+#else
+    memcpy(uc->uc_mcontext->vs.save_vscr, ri->vrregs.vscr,
+           sizeof(ri->vrregs.vscr[0]) * 4);
+#endif
+#endif
 }
 
 /* reginfo_is_eq: compare the reginfo structs, returns nonzero if equal */
