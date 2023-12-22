@@ -378,6 +378,7 @@ static void load_image(const char *imgfile)
 
 static int master(void)
 {
+    int result;
     RisuResult res = sigsetjmp(jmpbuf, 1);
 
     switch (res) {
@@ -387,7 +388,8 @@ static int master(void)
                 image_start_address);
         do_image();
         fprintf(stderr, "image returned unexpectedly\n");
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
 
     case RES_END:
 #ifdef HAVE_ZLIB
@@ -396,16 +398,20 @@ static int master(void)
         }
 #endif
         close(comm_fd);
-        return EXIT_SUCCESS;
+        result = EXIT_SUCCESS;
+        break;
 
     case RES_BAD_IO:
         fprintf(stderr, "i/o error after %zd checkpoints\n", signal_count);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
 
     default:
         fprintf(stderr, "unexpected result %d\n", res);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
     }
+    return result;
 }
 
 static const char *op_name(RisuOp op)
@@ -429,6 +435,7 @@ static const char *op_name(RisuOp op)
 
 static int apprentice(void)
 {
+    int result;
     RisuResult res = sigsetjmp(jmpbuf, 1);
 
     switch (res) {
@@ -438,10 +445,12 @@ static int apprentice(void)
                 image_start_address);
         do_image();
         fprintf(stderr, "image returned unexpectedly\n");
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
 
     case RES_END:
-        return EXIT_SUCCESS;
+        result = EXIT_SUCCESS;
+        break;
 
     case RES_MISMATCH_REG:
         fprintf(stderr, "Mismatch reg after %zd checkpoints\n", signal_count);
@@ -450,11 +459,13 @@ static int apprentice(void)
         fprintf(stderr, "apprentice reginfo:\n");
         reginfo_dump(&ri[APPRENTICE], stderr);
         reginfo_dump_mismatch(&ri[MASTER], &ri[APPRENTICE], stderr);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
 
     case RES_MISMATCH_MEM:
         fprintf(stderr, "Mismatch mem after %zd checkpoints\n", signal_count);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
 
     case RES_MISMATCH_OP:
         /* Out of sync, but both opcodes are known valid. */
@@ -463,24 +474,35 @@ static int apprentice(void)
                 "  opcode: %s vs %s\n",
                 signal_count, op_name(header.risu_op),
                 op_name(get_risuop(&ri[APPRENTICE])));
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
 
     case RES_BAD_IO:
         fprintf(stderr, "I/O error\n");
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
+
     case RES_BAD_MAGIC:
         fprintf(stderr, "Unexpected magic number: %#08x\n", header.magic);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
+
     case RES_BAD_SIZE:
         fprintf(stderr, "Unexpected payload size: %u\n", header.size);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
+
     case RES_BAD_OP:
         fprintf(stderr, "Unexpected opcode: %d\n", header.risu_op);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
+
     default:
         fprintf(stderr, "Unexpected result %d\n", res);
-        return EXIT_FAILURE;
+        result = EXIT_FAILURE;
+        break;
     }
+    return result;
 }
 
 static int ismaster;
