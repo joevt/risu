@@ -64,6 +64,9 @@ void arch_init(void)
 
 void do_image()
 {
+    uint8_t stack_bytes[32768];
+    for (int i = 0; i < sizeof(stack_bytes); i++)
+        stack_bytes[i] = i;
     image_start();
 }
 
