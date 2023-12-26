@@ -1066,8 +1066,19 @@ LSWI PPC64LE 011111 rt:5 ra:5 rb:5 10010101010 \
 
 # format:X book:I page:65 v:P1 lswx Load String Word Indexed
 LSWX PPC64LE 011111 rt:5 ra:5 rb:5 10000101010 \
-!constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
-!memory { reg_plus_reg($ra, $rb); }
+!constraints { \
+    my $nb = irand(0x7f); \
+    set_num($nb); \
+    my $nr = int (($nb + 3) / 4); \
+    my $regs = (-1 << (64-$nr)) >> $rt; \
+    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
+    $ra > 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
+} \
+!memory { \
+    write_mov_ri($ra, get_num()); \
+    insn32((31 << 26) | ($ra << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1)); \
+    reg_plus_reg($ra, $rb); \
+}
 
 # TODO remaining bytes of vrt are set to undefined values - cannot compare
 # format:X book:I page:244 v2.03 lvebx Load Vector Element Byte Indexed
@@ -1753,8 +1764,19 @@ STQ PPC64BE 111110 rsp:5 ra:5 imm:14 10 \
 
 # format:X book:I page:66 v:P1 stswx Store String Word Indexed
 STSWX PPC64LE 011111 rs:5 ra:5 rb:5 10100 101010 \
-!constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rs && $ra != $rb && $rs != $rb; } \
-!memory { reg_plus_reg($ra, $rb); }
+!constraints { \
+    my $nb = irand(0x7f); \
+    set_num($nb); \
+    my $nr = int (($nb + 3) / 4); \
+    my $regs = (-1 << (64-$nr)) >> $rs; \
+    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
+    $ra > 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$ra)))) == 0; \
+} \
+!memory { \
+    write_mov_ri($ra, get_num()); \
+    insn32((31 << 26) | ($ra << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1)); \
+    reg_plus_reg($ra, $rb); \
+}
 
 # format:X book:I page:247 v2.03 stvebx Store Vector Element Byte Indexed
 STVEBX PPC64LE 011111 vrs:5 ra:5 rb:5 00100001110 \
