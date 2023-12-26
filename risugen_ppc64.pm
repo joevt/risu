@@ -31,6 +31,19 @@ my $periodic_reg_random = 1;
 # Maximum alignment restriction permitted for a memory op.
 my $MAXALIGN = 64;
 
+my $num = 0;
+
+sub set_num($)
+{
+    my ($n) = @_;
+    $num = $n;
+}
+
+sub get_num()
+{
+    return $num;
+}
+
 sub write_mov_ri16($$)
 {
     my ($rd, $imm) = @_;
