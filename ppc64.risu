@@ -1055,8 +1055,14 @@ LQ PPC64LE 111000 rtp:5 ra:5 imm:12 0000 \
 
 # format:X book:I page:65 v:P1 lswi Load String Word Immediate
 LSWI PPC64LE 011111 rt:5 ra:5 rb:5 10010101010 \
-!constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
-!memory { reg_plus_reg($ra, $rb); }
+!constraints { \
+    my $nb = $rb + ($rb ? 0 : 32); \
+    my $nr = int (($nb + 3) / 4); \
+    my $regs = (-1 << (64-$nr)) >> $rt; \
+    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
+    $ra > 1 && $ra != 13 && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
+} \
+!memory { reg($ra); }
 
 # format:X book:I page:65 v:P1 lswx Load String Word Indexed
 LSWX PPC64LE 011111 rt:5 ra:5 rb:5 10000101010 \
@@ -1731,8 +1737,14 @@ STMW PPC64BE 101111 rt:5 ra:5 imm:16 \
 # STSWI is not supported in little-endian mode
 # format:X book:I page:66 v:P1 stswi Store String Word Immediate
 STSWI PPC64BE 011111 rs:5 ra:5 rb:5 10110101010 \
-!constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13 && $rs != $ra && $ra != 0; } \
-!memory { reg_plus_imm($ra, 0); }
+!constraints { \
+    my $nb = $rb + ($rb ? 0 : 32); \
+    my $nr = int (($nb + 3) / 4); \
+    my $regs = (-1 << (64-$nr)) >> $rs; \
+    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
+    $ra > 1 && $ra != 13 && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$ra)))) == 0; \
+} \
+!memory { reg($ra); }
 
 # format:DS book:I page:60 v2.03 stq Store Qword
 STQ PPC64BE 111110 rsp:5 ra:5 imm:14 10 \
