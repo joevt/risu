@@ -53,7 +53,7 @@ ADDEo PPC64LE 011111 rt:5 ra:5 rb:5 10100010100 \
 ADDEdo PPC64LE 011111 rt:5 ra:5 rb:5 10100010101 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
 
-# format:XO book:I page:110 v:2.06 addg6s Add & Generate Sixes
+# format:XO book:I page:110 v2.06 addg6s Add & Generate Sixes
 ADDG6S PPC64LE 111111 rt:5 ra:5 rb:5 00010010100 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
 
@@ -706,9 +706,9 @@ FCTIDZ PPC64LE 111111 frt:5 00000 frb:5 11001011110
 # format:X book:I page:161 PPC fctidz Floating Convert To Integer Dword truncate
 FCTIDZd PPC64LE 111111 frt:5 00000 frb:5 11001011111
 
-# format:X book:I page:162 P2 fctiw Floating Convert To Integer Word
+# format:X book:I page:162 v:P2 fctiw Floating Convert To Integer Word
 FCTIW PPC64LE 111111 frt:5 00000 frb:5 00000011100
-# format:X book:I page:162 P2 fctiw Floating Convert To Integer Word
+# format:X book:I page:162 v:P2 fctiw Floating Convert To Integer Word
 FCTIWd PPC64LE 111111 frt:5 00000 frb:5 00000011101
 
 # format:X book:I page:163 v2.06 fctiwu Floating Convert To Integer Word Unsigned
@@ -721,9 +721,9 @@ FCTIWUZ PPC64LE 111111 frt:5 00000 frb:5 00100011110
 # format:X book:I page:164 v2.06 fctiwuz Floating Convert To Integer Word Unsigned truncate
 FCTIWUZd PPC64LE 111111 frt:5 00000 frb:5 00100011111
 
-# format:X book:I page:163 P2 fctiwz Floating Convert To Integer Word truncate
+# format:X book:I page:163 v:P2 fctiwz Floating Convert To Integer Word truncate
 FCTIWZ PPC64LE 111111 frt:5 00000 frb:5 00000011110
-# format:X book:I page:163 P2 fctiwz Floating Convert To Integer Word truncate
+# format:X book:I page:163 v:P2 fctiwz Floating Convert To Integer Word truncate
 FCTIWZd PPC64LE 111111 frt:5 00000 frb:5 00000011111
 
 # format:A book:I page:154 v:P1 fdiv Floating Divide
@@ -857,9 +857,9 @@ FSEL PPC64LE 111111 frt:5 fra:5 frb:5 frc:5 101110
 # format:A book:I page:169 PPC fsel Floating Select
 FSELd PPC64LE 111111 frt:5 fra:5 frb:5 frc:5 101111
 
-# format:A book:I page:155 P2 fsqrt Floating Square Root
+# format:A book:I page:155 v:P2 fsqrt Floating Square Root
 FSQRT PPC64LE 111111 frt:5 00000 frb:5 00000101100
-# format:A book:I page:155 P2 fsqrt Floating Square Root
+# format:A book:I page:155 v:P2 fsqrt Floating Square Root
 FSQRTd PPC64LE 111111 frt:5 00000 frb:5 00000101101
 
 # format:A book:I page:155 PPC fsqrts Floating Square Root Single
@@ -1551,7 +1551,7 @@ RLWNMd PPC64LE 010111 rs:5 ra:5 rb:5 mb:5 me:5 1 \
 # format:SC book:I page:43 PPC sc System Call
 #SC PPC64LE 01000100000000000000 lev:7 00010
 
-## format:SC book:I page:43 v3.0 scv System Call Vectored
+# format:SC book:I page:43 v3.0 scv System Call Vectored
 #SCV PPC64LE 01000100000000000000 lev:7 00001
 
 # format:X book:I page:121 v3.0 setb Set Boolean
@@ -3094,7 +3094,7 @@ XSRSP PPC64LE 111100 t:5 00000 b:5 10001 1001 bx:1 tx:1
 # format:XX2 book:I page:641 v2.06 xsrsqrtedp VSX Scalar Reciprocal Square Root Estimate DP
 XSRSQRTEDP PPC64LE 111100 t:5 00000 b:5 00100 1010 bx:1 tx:1
 
-# format:XX2 book:I page:642  v2.07 xsrsqrtesp VSX Scalar Reciprocal Square Root Estimate SP
+# format:XX2 book:I page:642 v2.07 xsrsqrtesp VSX Scalar Reciprocal Square Root Estimate SP
 XSRSQRTESP PPC64LE 111100 t:5 00000 b:5 00000 1010 bx:1 tx:1
 
 # format:XX2 book:I page:643 v2.06 xssqrtdp VSX Scalar Square Root DP
@@ -3411,10 +3411,10 @@ XVSUBDP PPC64LE 111100 t:5 a:5 b:5 01101000 ax:1 bx:1 tx:1
 XVSUBSP PPC64LE 111100 t:5 a:5 b:5 01001000 ax:1 bx:1 tx:1
 
 # format:XX3 book:I page:761 v2.06 xvtdivdp VSX Vector Test for software Divide DP
-XVTDIVDP PPC64LE 111100  bf:3 00 a:5 b:5 01111101 ax:1 bx:1 0
+XVTDIVDP PPC64LE 111100 bf:3 00 a:5 b:5 01111101 ax:1 bx:1 0
 
 # format:XX3 book:I page:762 v2.06 xvtdivsp VSX Vector Test for software Divide SP
-XVTDIVSP PPC64LE 111100  bf:3 00 a:5 b:5 01011101 ax:1 bx:1 0
+XVTDIVSP PPC64LE 111100 bf:3 00 a:5 b:5 01011101 ax:1 bx:1 0
 
 # format:XX2 book:I page:763 v2.06 xvtsqrtdp VSX Vector Test for software Square Root DP
 XVTSQRTDP PPC64LE 111100 bf:3 0000000 b:5 011101010 bx:1 0
