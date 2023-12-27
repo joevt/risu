@@ -49,6 +49,7 @@
 #   v2.06    See above.
 #   v2.07    See above.
 #   v3.0     See above.
+#   AltiVec  Instruction supported in all CPUs that support vector instructions.
 
 @P1
 # format:XO book:I page:70 v:P1 SR add Add
@@ -1456,45 +1457,45 @@ LSWX PPC64LE 011111 rt:5 ra:5 rb:5 10000101010 \
 }
 
 # TODO remaining bytes of vrt are set to undefined values - cannot compare
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:244 v2.03 lvebx Load Vector Element Byte Indexed
 #LVEBX PPC64LE 011111 vrt:5 ra:5 rb:5 00000001110 \
 #!constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 #!memory { reg_plus_reg($ra, $rb); }
 
 # TODO remaining bytes of vrt are set to undefined values - cannot compare
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:244 v2.03 lvehx Load Vector Element Hword Indexed
 #LVEHX PPC64LE 011111 vrt:5 ra:5 rb:5 00001001110 \
 #!constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 #!memory { reg_plus_reg($ra, $rb); }
 
 # TODO remaining bytes of vrt are set to undefined values - cannot compare
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:245 v2.03 lvewx Load Vector Element Word Indexed
 #LVEWX PPC64LE 011111 vrt:5 ra:5 rb:5 00010001110 \
 #!constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 #!memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:249 v2.03 lvsl Load Vector for Shift Left
 LVSL PPC64LE 011111 vrt:5 ra:5 rb:5 00000001100 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:249 v2.03 lvsr Load Vector for Shift Right
 LVSR PPC64LE 011111 vrt:5 ra:5 rb:5 00001001100 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:245 v2.03 lvx Load Vector Indexed
 LVX PPC64LE 011111 vrt:5 ra:5 rb:5 00011001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:245 v2.03 lvxl Load Vector Indexed Last
 LVXL PPC64LE 011111 vrt:5 ra:5 rb:5 01011001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
@@ -1695,7 +1696,7 @@ MFFSd PPC64LE 111111 frt:5 000000000010010001111
 MFOCRF PPC64LE 011111 rt:5 1 fxm:8 000000100110 \
 !constraints { $rt != 1 && $rt != 13; }
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:364 v2.03 mfvscr Move From VSCR
 MFVSCR PPC64LE 000100 vrt:5 000000000011000000100
 
@@ -1772,7 +1773,7 @@ MTFSFId PPC64LE 111111 bf:3 000000 w:1 u:4 000100001101
 MTOCRF PPC64LE 011111 rs:5 1 fxm:8 000100100000 \
 !constraints { $rs != 1 && $rs != 13; }
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:364 v2.03 mtvscr Move To VSCR
 MTVSCR PPC64LE 0001000000000000 vrb:5 11001000100
 
@@ -2323,31 +2324,31 @@ STSWX PPC64LE 011111 rs:5 ra:5 rb:5 10100 101010 \
     reg_plus_reg($ra, $rb); \
 }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:247 v2.03 stvebx Store Vector Element Byte Indexed
 STVEBX PPC64LE 011111 vrs:5 ra:5 rb:5 00100001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:247 v2.03 stvehx Store Vector Element Hword Indexed
 STVEHX PPC64LE 011111 vrs:5 ra:5 rb:5 00101001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:248 v2.03 stvewx Store Vector Element Word Indexed
 STVEWX PPC64LE 011111 vrs:5 ra:5 rb:5 00110001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:248 v2.03 stvx Store Vector Indexed
 STVX PPC64LE 011111 vrs:5 ra:5 rb:5 00111001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@v2.03
+@v2.03,AltiVec
 # format:X book:I page:248 v2.03 stvxl Store Vector Indexed Last
 STVXL PPC64LE 011111 vrs:5 ra:5 rb:5 01111001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
@@ -2593,7 +2594,7 @@ VABSDUW PPC64LE 000100 vrt:5 vra:5 vrb:5 10010 000011
 # format:VX book:I page:275 v2.07 vaddcuq Vector Add & write Carry Unsigned Qword
 VADDCUQ PPC64LE 000100 vrt:5 vra:5 vrb:5 00101 000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:271 v2.03 vaddcuw Vector Add & Write Carry-Out Unsigned Word
 VADDCUW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110000000
 
@@ -2605,27 +2606,27 @@ VADDECUQ PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 111101
 # format:VA book:I page:275 v2.07 vaddeuqm Vector Add Extended Unsigned Qword Modulo
 VADDEUQM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 111100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:324 v2.03 vaddfp Vector Add Floating-Point
 VADDFP PPC64LE 000100 vrt:5 vra:5 vrb:5 00000001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:271 v2.03 vaddsbs Vector Add Signed Byte Saturate
 VADDSBS PPC64LE 000100 vrt:5 vra:5 vrb:5 01100000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:271 v2.03 vaddshs Vector Add Signed Hword Saturate
 VADDSHS PPC64LE 000100 vrt:5 vra:5 vrb:5 01101000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:272 v2.03 vaddsws Vector Add Signed Word Saturate
 VADDSWS PPC64LE 000100 vrt:5 vra:5 vrb:5 01110000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:272 v2.03 vaddubm Vector Add Unsigned Byte Modulo
 VADDUBM PPC64LE 000100 vrt:5 vra:5 vrb:5 00000000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:274 v2.03 vaddubs Vector Add Unsigned Byte Saturate
 VADDUBS PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000000
 
@@ -2633,11 +2634,11 @@ VADDUBS PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000000
 # format:VX book:I page:272 v2.07 vaddudm Vector Add Unsigned Dword Modulo
 VADDUDM PPC64LE 000100 vrt:5 vra:5 vrb:5 00011000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:273 v2.03 vadduhm Vector Add Unsigned Hword Modulo
 VADDUHM PPC64LE 000100 vrt:5 vra:5 vrb:5 00001000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:274 v2.03 vadduhs Vector Add Unsigned Hword Saturate
 VADDUHS PPC64LE 000100 vrt:5 vra:5 vrb:5 01001000000
 
@@ -2645,43 +2646,43 @@ VADDUHS PPC64LE 000100 vrt:5 vra:5 vrb:5 01001000000
 # format:VX book:I page:272 v2.07 vadduqm Vector Add Unsigned Qword Modulo
 VADDUQM PPC64LE 000100 vrt:5 vra:5 vrb:5 00100000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:273 v2.03 vadduwm Vector Add Unsigned Word Modulo
 VADDUWM PPC64LE 000100 vrt:5 vra:5 vrb:5 00010000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:274 v2.03 vadduws Vector Add Unsigned Word Saturate
 VADDUWS PPC64LE 000100 vrt:5 vra:5 vrb:5 01010000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:315 v2.03 vand Vector Logical AND
 VAND PPC64LE 000100 vrt:5 vra:5 vrb:5 10000000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:315 v2.03 vandc Vector Logical AND with Complement
 VANDC PPC64LE 000100 vrt:5 vra:5 vrb:5 10001000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:298 v2.03 vavgsb Vector Average Signed Byte
 VAVGSB PPC64LE 000100 vrt:5 vra:5 vrb:5 10100000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:298 v2.03 vavgsh Vector Average Signed Hword
 VAVGSH PPC64LE 000100 vrt:5 vra:5 vrb:5 10101000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:298 v2.03 vavgsw Vector Average Signed Word
 VAVGSW PPC64LE 000100 vrt:5 vra:5 vrb:5 10110000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:299 v2.03 vavgub Vector Average Unsigned Byte
 VAVGUB PPC64LE 000100 vrt:5 vra:5 vrb:5 10000000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:299 v2.03 vavguh Vector Average Unsigned Hword
 VAVGUH PPC64LE 000100 vrt:5 vra:5 vrb:5 10001000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:299 v2.03 vavguw Vector Average Unsigned Word
 VAVGUW PPC64LE 000100 vrt:5 vra:5 vrb:5 10010000010
 
@@ -2693,11 +2694,11 @@ VBPERMD PPC64LE 000100 vrt:5 vra:5 vrb:5 10111001100
 # format:VX book:I page:349 v2.07 vbpermq Vector Bit Permute Qword
 VBPERMQ PPC64LE 000100 vrt:5 vra:5 vrb:5 10101001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:328 v2.03 vcfsx Vector Convert From Signed Word
 VCFSX PPC64LE 000100 vrt:5 uim:5 vrb:5 01101001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:328 v2.03 vcfux Vector Convert From Unsigned Word
 VCFUX PPC64LE 000100 vrt:5 uim:5 vrb:5 01100001010
 
@@ -2730,24 +2731,24 @@ VCLZLSBB PPC64LE 000100 rt:5 00000 vrb:5 11000000010 \
 # format:VX book:I page:343 v2.07 vclzw Vector Count Leading Zeros Word
 VCLZW PPC64LE 000100 vrt:5 00000 vrb:5 11110000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:331 v2.03 vcmpbfp[.] Vector Compare Bounds Floating-Point
 VCMPBFP PPC64LE 000100 vrt:5 vra:5 vrb:5 01111000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:331 v2.03 vcmpbfp[.] Vector Compare Bounds Floating-Point
 VCMPBFPd PPC64LE 000100 vrt:5 vra:5 vrb:5 11111000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:332 v2.03 vcmpeqfp[.] Vector Compare Equal To Floating-Point
 VCMPEQFP PPC64LE 000100 vrt:5 vra:5 vrb:5 00011000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:332 v2.03 vcmpeqfp[.] Vector Compare Equal To Floating-Point
 VCMPEQFPd PPC64LE 000100 vrt:5 vra:5 vrb:5 10011000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:306 v2.03 vcmpequb[.] Vector Compare Equal Unsigned Byte
 VCMPEQUB PPC64LE 000100 vrt:5 vra:5 vrb:5 00000000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:306 v2.03 vcmpequb[.] Vector Compare Equal Unsigned Byte
 VCMPEQUBd PPC64LE 000100 vrt:5 vra:5 vrb:5 10000000110
 
@@ -2758,38 +2759,38 @@ VCMPEQUD PPC64LE 000100 vrt:5 vra:5 vrb:5 00011000111
 # format:VC book:I page:307 v2.07 vcmpequd[.] Vector Compare Equal Unsigned Dword
 VCMPEQUDd PPC64LE 000100 vrt:5 vra:5 vrb:5 10011000111
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:306 v2.03 vcmpequh[.] Vector Compare Equal Unsigned Hword
 VCMPEQUH PPC64LE 000100 vrt:5 vra:5 vrb:5 00001000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:306 v2.03 vcmpequh[.] Vector Compare Equal Unsigned Hword
 VCMPEQUHd PPC64LE 000100 vrt:5 vra:5 vrb:5 10001000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:307 v2.03 vcmpequw[.] Vector Compare Equal Unsigned Word
 VCMPEQUW PPC64LE 000100 vrt:5 vra:5 vrb:5 00010000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:307 v2.03 vcmpequw[.] Vector Compare Equal Unsigned Word
 VCMPEQUWd PPC64LE 000100 vrt:5 vra:5 vrb:5 10010000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:332 v2.03 vcmpgefp[.] Vector Compare Greater Than or Equal To Floating-Point
 VCMPGEFP PPC64LE 000100 vrt:5 vra:5 vrb:5 00111000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:332 v2.03 vcmpgefp[.] Vector Compare Greater Than or Equal To Floating-Point
 VCMPGEFPd PPC64LE 000100 vrt:5 vra:5 vrb:5 10111000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:333 v2.03 vcmpgtfp[.] Vector Compare Greater Than Floating-Point
 VCMPGTFP PPC64LE 000100 vrt:5 vra:5 vrb:5 01011000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:333 v2.03 vcmpgtfp[.] Vector Compare Greater Than Floating-Point
 VCMPGTFPd PPC64LE 000100 vrt:5 vra:5 vrb:5 11011000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:308 v2.03 vcmpgtsb[.] Vector Compare Greater Than Signed Byte
 VCMPGTSB PPC64LE 000100 vrt:5 vra:5 vrb:5 01100000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:308 v2.03 vcmpgtsb[.] Vector Compare Greater Than Signed Byte
 VCMPGTSBd PPC64LE 000100 vrt:5 vra:5 vrb:5 11100000110
 
@@ -2800,24 +2801,24 @@ VCMPGTSD PPC64LE 000100 vrt:5 vra:5 vrb:5 01111000111
 # format:VC book:I page:308 v2.07 vcmpgtsd[.] Vector Compare Greater Than Signed Dword
 VCMPGTSDd PPC64LE 000100 vrt:5 vra:5 vrb:5 11111000111
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:309 v2.03 vcmpgtsh[.] Vector Compare Greater Than Signed Hword
 VCMPGTSH PPC64LE 000100 vrt:5 vra:5 vrb:5 01101000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:309 v2.03 vcmpgtsh[.] Vector Compare Greater Than Signed Hword
 VCMPGTSHd PPC64LE 000100 vrt:5 vra:5 vrb:5 11101000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:309 v2.03 vcmpgtsw[.] Vector Compare Greater Than Signed Word
 VCMPGTSW PPC64LE 000100 vrt:5 vra:5 vrb:5 01110000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:309 v2.03 vcmpgtsw[.] Vector Compare Greater Than Signed Word
 VCMPGTSWd PPC64LE 000100 vrt:5 vra:5 vrb:5 11110000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:310 v2.03 vcmpgtub[.] Vector Compare Greater Than Unsigned Byte
 VCMPGTUB PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:310 v2.03 vcmpgtub[.] Vector Compare Greater Than Unsigned Byte
 VCMPGTUBd PPC64LE 000100 vrt:5 vra:5 vrb:5 11000000110
 
@@ -2828,17 +2829,17 @@ VCMPGTUD PPC64LE 000100 vrt:5 vra:5 vrb:5 01011000111
 # format:VC book:I page:310 v2.07 vcmpgtud[.] Vector Compare Greater Than Unsigned Dword
 VCMPGTUDd PPC64LE 000100 vrt:5 vra:5 vrb:5 11011000111
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:311 v2.03 vcmpgtuh[.] Vector Compare Greater Than Unsigned Hword
 VCMPGTUH PPC64LE 000100 vrt:5 vra:5 vrb:5 01001000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:311 v2.03 vcmpgtuh[.] Vector Compare Greater Than Unsigned Hword
 VCMPGTUHd PPC64LE 000100 vrt:5 vra:5 vrb:5 11001000110
 
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:311 v2.03 vcmpgtuw[.] Vector Compare Greater Than Unsigned Word
 VCMPGTUW PPC64LE 000100 vrt:5 vra:5 vrb:5 01010000110
-@v2.03
+@v2.03,AltiVec
 # format:VC book:I page:311 v2.03 vcmpgtuw[.] Vector Compare Greater Than Unsigned Word
 VCMPGTUWd PPC64LE 000100 vrt:5 vra:5 vrb:5 11010000110
 
@@ -2884,11 +2885,11 @@ VCMPNEZW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110000111
 # format:VC book:I page:314 v3.0 vcmpnezw[.] Vector Compare Not Equal or Zero Word
 VCMPNEZWd PPC64LE 000100 vrt:5 vra:5 vrb:5 10110000111
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:327 v2.03 vctsxs Vector Convert To Signed Word Saturate
 VCTSXS PPC64LE 000100 vrt:5 uim:5 vrb:5 01111001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:327 v2.03 vctuxs Vector Convert To Unsigned Word Saturate
 VCTUXS PPC64LE 000100 vrt:5 uim:5 vrb:5 01110001010
 
@@ -2917,7 +2918,7 @@ VCTZW PPC64LE 000100 vrt:5 11110 vrb:5 11000000010
 # format:VX book:I page:315 v2.07 veqv Vector Logical Equivalence
 VEQV PPC64LE 000100 vrt:5 vra:5 vrb:5 11010000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:334 v2.03 vexptefp Vector 2 Raised to the Exponent Estimate Floating-Point
 VEXPTEFP PPC64LE 000100 vrt:5 00000 vrb:5 00110001010
 
@@ -3007,19 +3008,19 @@ VINSERTH PPC64LE 000100 vrt:5 0 uim:4 vrb:5 01101001101
 # format:VX book:I page:270 v3.0 vinsertw Vector Insert Word
 VINSERTW PPC64LE 000100 vrt:5 0 uim:4 vrb:5 01110001101
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:334 v2.03 vlogefp Vector Log Base 2 Estimate Floating-Point
 VLOGEFP PPC64LE 000100 vrt:5 00000 vrb:5 00111001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:325 v2.03 vmaddfp Vector Multiply-Add Floating-Point
 VMADDFP PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:326 v2.03 vmaxfp Vector Maximum Floating-Point
 VMAXFP PPC64LE 000100 vrt:5 vra:5 vrb:5 10000001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:302 v2.03 vmaxsb Vector Maximum Signed Byte
 VMAXSB PPC64LE 000100 vrt:5 vra:5 vrb:5 00100000010
 
@@ -3027,15 +3028,15 @@ VMAXSB PPC64LE 000100 vrt:5 vra:5 vrb:5 00100000010
 # format:VX book:I page:302 v2.07 vmaxsd Vector Maximum Signed Dword
 VMAXSD PPC64LE 000100 vrt:5 vra:5 vrb:5 00111000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:303 v2.03 vmaxsh Vector Maximum Signed Hword
 VMAXSH PPC64LE 000100 vrt:5 vra:5 vrb:5 00101000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:303 v2.03 vmaxsw Vector Maximum Signed Word
 VMAXSW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:302 v2.03 vmaxub Vector Maximum Unsigned Byte
 VMAXUB PPC64LE 000100 vrt:5 vra:5 vrb:5 00000000010
 
@@ -3043,27 +3044,27 @@ VMAXUB PPC64LE 000100 vrt:5 vra:5 vrb:5 00000000010
 # format:VX book:I page:302 v2.07 vmaxud Vector Maximum Unsigned Dword
 VMAXUD PPC64LE 000100 vrt:5 vra:5 vrb:5 00011000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:303 v2.03 vmaxuh Vector Maximum Unsigned Hword
 VMAXUH PPC64LE 000100 vrt:5 vra:5 vrb:5 00001000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:303 v2.03 vmaxuw Vector Maximum Unsigned Word
 VMAXUW PPC64LE 000100 vrt:5 vra:5 vrb:5 00010000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:287 v2.03 vmhaddshs Vector Multiply-High-Add Signed Hword Saturate
 VMHADDSHS PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100000
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:287 v2.03 vmhraddshs Vector Multiply-High-Round-Add Signed Hword Saturate
 VMHRADDSHS PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100001
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:326 v2.03 vminfp Vector Minimum Floating-Point
 VMINFP PPC64LE 000100 vrt:5 vra:5 vrb:5 10001001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:304 v2.03 vminsb Vector Minimum Signed Byte
 VMINSB PPC64LE 000100 vrt:5 vra:5 vrb:5 01100000010
 
@@ -3071,15 +3072,15 @@ VMINSB PPC64LE 000100 vrt:5 vra:5 vrb:5 01100000010
 # format:VX book:I page:304 v2.07 vminsd Vector Minimum Signed Dword
 VMINSD PPC64LE 000100 vrt:5 vra:5 vrb:5 01111000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:305 v2.03 vminsh Vector Minimum Signed Hword
 VMINSH PPC64LE 000100 vrt:5 vra:5 vrb:5 01101000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:305 v2.03 vminsw Vector Minimum Signed Word
 VMINSW PPC64LE 000100 vrt:5 vra:5 vrb:5 01110000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:304 v2.03 vminub Vector Minimum Unsigned Byte
 VMINUB PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000010
 
@@ -3087,11 +3088,11 @@ VMINUB PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000010
 # format:VX book:I page:304 v2.07 vminud Vector Minimum Unsigned Dword
 VMINUD PPC64LE 000100 vrt:5 vra:5 vrb:5 01011000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:305 v2.03 vminuh Vector Minimum Unsigned Hword
 VMINUH PPC64LE 000100 vrt:5 vra:5 vrb:5 01001000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:305 v2.03 vminuw Vector Minimum Unsigned Word
 VMINUW PPC64LE 000100 vrt:5 vra:5 vrb:5 01010000010
 
@@ -3099,27 +3100,27 @@ VMINUW PPC64LE 000100 vrt:5 vra:5 vrb:5 01010000010
 # format:VX book:I page:259 v2.07 vmrgew Vector Merge Even Word
 VMRGEW PPC64LE 000100 vrt:5 vra:5 vrb:5 11110001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:257 v2.03 vmrghb Vector Merge High Byte
 VMRGHB PPC64LE 000100 vrt:5 vra:5 vrb:5 00000001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:257 v2.03 vmrghh Vector Merge High Hword
 VMRGHH PPC64LE 000100 vrt:5 vra:5 vrb:5 00001001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:258 v2.03 vmrghw Vector Merge High Word
 VMRGHW PPC64LE 000100 vrt:5 vra:5 vrb:5 00010001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:257 v2.03 vmrglb Vector Merge Low Byte
 VMRGLB PPC64LE 000100 vrt:5 vra:5 vrb:5 00100001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:257 v2.03 vmrglh Vector Merge Low Hword
 VMRGLH PPC64LE 000100 vrt:5 vra:5 vrb:5 00101001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:258 v2.03 vmrglw Vector Merge Low Word
 VMRGLW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110001100
 
@@ -3127,31 +3128,31 @@ VMRGLW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110001100
 # format:VX book:I page:259 v2.07 vmrgow Vector Merge Odd Word
 VMRGOW PPC64LE 000100 vrt:5 vra:5 vrb:5 11010001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:288 v2.03 vmladduhm Vector Multiply-Low-Add Unsigned Hword Modulo
 VMLADDUHM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100010
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:289 v2.03 vmsummbm Vector Multiply-Sum Mixed Byte Modulo
 VMSUMMBM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100101
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:289 v2.03 vmsumshm Vector Multiply-Sum Signed Hword Modulo
 VMSUMSHM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101000
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:290 v2.03 vmsumshs Vector Multiply-Sum Signed Hword Saturate
 VMSUMSHS PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101001
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:288 v2.03 vmsumubm Vector Multiply-Sum Unsigned Byte Modulo
 VMSUMUBM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100100
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:290 v2.03 vmsumuhm Vector Multiply-Sum Unsigned Hword Modulo
 VMSUMUHM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100110
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:291 v2.03 vmsumuhs Vector Multiply-Sum Unsigned Hword Saturate
 VMSUMUHS PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 100111
 
@@ -3171,11 +3172,11 @@ VMUL10EUQ PPC64LE 000100 vrt:5 vra:5 vrb:5 01001000001
 # format:VX book:I page:357 v3.0 vmul10uq Vector Multiply-by-10 Unsigned Qword
 VMUL10UQ PPC64LE 000100 vrt:5 vra:5 0000001000000001
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:283 v2.03 vmulesb Vector Multiply Even Signed Byte
 VMULESB PPC64LE 000100 vrt:5 vra:5 vrb:5 01100001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:284 v2.03 vmulesh Vector Multiply Even Signed Hword
 VMULESH PPC64LE 000100 vrt:5 vra:5 vrb:5 01101001000
 
@@ -3183,11 +3184,11 @@ VMULESH PPC64LE 000100 vrt:5 vra:5 vrb:5 01101001000
 # format:VX book:I page:285 v2.07 vmulesw Vector Multiply Even Signed Word
 VMULESW PPC64LE 000100 vrt:5 vra:5 vrb:5 01110001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:283 v2.03 vmuleub Vector Multiply Even Unsigned Byte
 VMULEUB PPC64LE 000100 vrt:5 vra:5 vrb:5 01000001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:284 v2.03 vmuleuh Vector Multiply Even Unsigned Hword
 VMULEUH PPC64LE 000100 vrt:5 vra:5 vrb:5 01001001000
 
@@ -3195,11 +3196,11 @@ VMULEUH PPC64LE 000100 vrt:5 vra:5 vrb:5 01001001000
 # format:VX book:I page:285 v2.07 vmuleuw Vector Multiply Even Unsigned Word
 VMULEUW PPC64LE 000100 vrt:5 vra:5 vrb:5 01010001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:283 v2.03 vmulosb Vector Multiply Odd Signed Byte
 VMULOSB PPC64LE 000100 vrt:5 vra:5 vrb:5 00100001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:284 v2.03 vmulosh Vector Multiply Odd Signed Hword
 VMULOSH PPC64LE 000100 vrt:5 vra:5 vrb:5 00101001000
 
@@ -3207,11 +3208,11 @@ VMULOSH PPC64LE 000100 vrt:5 vra:5 vrb:5 00101001000
 # format:VX book:I page:285 v2.07 vmulosw Vector Multiply Odd Signed Word
 VMULOSW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:283 v2.03 vmuloub Vector Multiply Odd Unsigned Byte
 VMULOUB PPC64LE 000100 vrt:5 vra:5 vrb:5 00000001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:284 v2.03 vmulouh Vector Multiply Odd Unsigned Hword
 VMULOUH PPC64LE 000100 vrt:5 vra:5 vrb:5 00001001000
 
@@ -3243,15 +3244,15 @@ VNEGD PPC64LE 000100 vrt:5 00111 vrb:5 11000000010
 # format:VX book:I page:295 v3.0 vnegw Vector Negate Word
 VNEGW PPC64LE 000100 vrt:5 00110 vrb:5 11000000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:325 v2.03 vnmsubfp Vector Negative Multiply-Subtract Floating-Point
 VNMSUBFP PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101111
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:316 v2.03 vnor Vector Logical NOR
 VNOR PPC64LE 000100 vrt:5 vra:5 vrb:5 10100000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:316 v2.03 vor Vector Logical OR
 VOR PPC64LE 000100 vrt:5 vra:5 vrb:5 10010000100
 
@@ -3259,7 +3260,7 @@ VOR PPC64LE 000100 vrt:5 vra:5 vrb:5 10010000100
 # format:VX book:I page:316 v2.07 vorc Vector Logical OR with Complement
 VORC PPC64LE 000100 vrt:5 vra:5 vrb:5 10101000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:262 v2.03 vperm Vector Permute
 VPERM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101011
 
@@ -3271,7 +3272,7 @@ VPERMR PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 111011
 # format:VA book:I page:341 v2.07 vpermxor Vector Permute & Exclusive-OR
 VPERMXOR PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101101
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:250 v2.03 vpkpx Vector Pack Pixel
 VPKPX PPC64LE 000100 vrt:5 vra:5 vrb:5 01100001110
 
@@ -3283,19 +3284,19 @@ VPKSDSS PPC64LE 000100 vrt:5 vra:5 vrb:5 10111001110
 # format:VX book:I page:251 v2.07 vpksdus Vector Pack Signed Dword Unsigned Saturate
 VPKSDUS PPC64LE 000100 vrt:5 vra:5 vrb:5 10101001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:251 v2.03 vpkshss Vector Pack Signed Hword Signed Saturate
 VPKSHSS PPC64LE 000100 vrt:5 vra:5 vrb:5 00110001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:252 v2.03 vpkshus Vector Pack Signed Hword Unsigned Saturate
 VPKSHUS PPC64LE 000100 vrt:5 vra:5 vrb:5 00100001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:252 v2.03 vpkswss Vector Pack Signed Word Signed Saturate
 VPKSWSS PPC64LE 000100 vrt:5 vra:5 vrb:5 00111001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:253 v2.03 vpkswus Vector Pack Signed Word Unsigned Saturate
 VPKSWUS PPC64LE 000100 vrt:5 vra:5 vrb:5 00101001110
 
@@ -3307,19 +3308,19 @@ VPKUDUM PPC64LE 000100 vrt:5 vra:5 vrb:5 10001001110
 # format:VX book:I page:253 v2.07 vpkudus Vector Pack Unsigned Dword Unsigned Saturate
 VPKUDUS PPC64LE 000100 vrt:5 vra:5 vrb:5 10011001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:253 v2.03 vpkuhum Vector Pack Unsigned Hword Unsigned Modulo
 VPKUHUM PPC64LE 000100 vrt:5 vra:5 vrb:5 00000001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:254 v2.03 vpkuhus Vector Pack Unsigned Hword Unsigned Saturate
 VPKUHUS PPC64LE 000100 vrt:5 vra:5 vrb:5 00010001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:254 v2.03 vpkuwum Vector Pack Unsigned Word Unsigned Modulo
 VPKUWUM PPC64LE 000100 vrt:5 vra:5 vrb:5 00001001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:254 v2.03 vpkuwus Vector Pack Unsigned Word Unsigned Saturate
 VPKUWUS PPC64LE 000100 vrt:5 vra:5 vrb:5 00011001110
 
@@ -3367,27 +3368,27 @@ VPRTYBQ PPC64LE 000100 vrt:5 01010 vrt:5 11000000010
 # format:VX book:I page:317 v3.0 vprtybw Vector Parity Byte Word
 VPRTYBW PPC64LE 000100 vrt:5 01000 vrt:5 11000000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:335 v2.03 vrefp Vector Reciprocal Estimate Floating-Point
 VREFP PPC64LE 000100 vrt:5 00000 vrt:5 00100001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:329 v2.03 vrfim Vector Round to Floating-Point Integral toward -Infinity
 VRFIM PPC64LE 000100 vrt:5 00000 vrt:5 01011001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:329 v2.03 vrfin Vector Round to Floating-Point Integral Nearest
 VRFIN PPC64LE 000100 vrt:5 00000 vrt:5 01000001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:329 v2.03 vrfip Vector Round to Floating-Point Integral toward +Infinity
 VRFIP PPC64LE 000100 vrt:5 00000 vrt:5 01010001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:330 v2.03 vrfiz Vector Round to Floating-Point Integral toward Zero
 VRFIZ PPC64LE 000100 vrt:5 00000 vrt:5 01001001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:318 v2.03 vrlb Vector Rotate Left Byte
 VRLB PPC64LE 000100 vrt:5 vra:5 vrb:5 00000000100
 
@@ -3403,11 +3404,11 @@ VRLDMI PPC64LE 000100 vrt:5 vra:5 vrb:5 00011000101
 # format:VX book:I page:323 v3.0 vrldnm Vector Rotate Left Dword then AND with Mask
 VRLDNM PPC64LE 000100 vrt:5 vra:5 vrb:5 00111000101
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:318 v2.03 vrlh Vector Rotate Left Hword
 VRLH PPC64LE 000100 vrt:5 vra:5 vrb:5 00001000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:318 v2.03 vrlw Vector Rotate Left Word
 VRLW PPC64LE 000100 vrt:5 vra:5 vrb:5 00010000100
 
@@ -3419,7 +3420,7 @@ VRLWMI PPC64LE 000100 vrt:5 vra:5 vrb:5 00010000101
 # format:VX book:I page:322 v3.0 vrlwnm Vector Rotate Left Word then AND with Mask
 VRLWNM PPC64LE 000100 vrt:5 vra:5 vrb:5 00110000101
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:335 v2.03 vrsqrtefp Vector Reciprocal Square Root Estimate Floating-Point
 VRSQRTEFP PPC64LE 000100 vrt:5 00000 vrb:5 00101001010
 
@@ -3427,7 +3428,7 @@ VRSQRTEFP PPC64LE 000100 vrt:5 00000 vrb:5 00101001010
 # format:VX book:I page:337 v2.07 vsbox Vector AES SubBytes
 VSBOX PPC64LE 000100 vrt:5 vra:5 0000010111001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:263 v2.03 vsel Vector Select
 VSEL PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 101010
 
@@ -3439,11 +3440,11 @@ VSHASIGMAD PPC64LE 000100 vrt:5 vra:5 vrb:5 11011000010
 # format:VX book:I page:338 v2.07 vshasigmaw Vector SHA-256 Sigma Word
 VSHASIGMAW PPC64LE 000100 vrt:5 vra:5 vrb:5 11010000010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:266 v2.03 vsl Vector Shift Left
 VSL PPC64LE 000100 vrt:5 vra:5 vrb:5 00111000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:319 v2.03 vslb Vector Shift Left Byte
 VSLB PPC64LE 000100 vrt:5 vra:5 vrb:5 00100000100
 
@@ -3451,15 +3452,15 @@ VSLB PPC64LE 000100 vrt:5 vra:5 vrb:5 00100000100
 # format:VX book:I page:319 v2.07 vsld Vector Shift Left Dword
 VSLD PPC64LE 000100 vrt:5 vra:5 vrb:5 10111000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VA book:I page:265 v2.03 vsldoi Vector Shift Left Double by Octet Immediate
 VSLDOI PPC64LE 000100 vrt:5 vra:5 vrb:5 0 shb:4 101100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:319 v2.03 vslh Vector Shift Left Hword
 VSLH PPC64LE 000100 vrt:5 vra:5 vrb:5 00101000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:266 v2.03 vslo Vector Shift Left by Octet
 VSLO PPC64LE 000100 vrt:5 vra:5 vrb:5 10000001100
 
@@ -3467,39 +3468,39 @@ VSLO PPC64LE 000100 vrt:5 vra:5 vrb:5 10000001100
 # format:X book:I page:267 v3.0 vslv Vector Shift Left Variable
 VSLV PPC64LE 000100 vrt:5 vra:5 vrb:5 11101000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:319 v2.03 vslw Vector Shift Left Word
 VSLW PPC64LE 000100 vrt:5 vra:5 vrb:5 00110000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:260 v2.03 vspltb Vector Splat Byte
 VSPLTB PPC64LE 000100 vrt:5 0 uim:4 vrb:5 01000001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:260 v2.03 vsplth Vector Splat Hword
 VSPLTH PPC64LE 000100 vrt:5 00 uim:3 vrb:5 01001001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:261 v2.03 vspltisb Vector Splat Immediate Signed Byte
 VSPLTISB PPC64LE 000100 vrt:5 sim:5 0000001100001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:261 v2.03 vspltish Vector Splat Immediate Signed Hword
 VSPLTISH PPC64LE 000100 vrt:5 sim:5 0000001101001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:261 v2.03 vspltisw Vector Splat Immediate Signed Word
 VSPLTISW PPC64LE 000100 vrt:5 sim:5 0000001110001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:260 v2.03 vspltw Vector Splat Word
 VSPLTW PPC64LE 000100 vrt:5 000 uim:2 vrb:5 01010001100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:266 v2.03 vsr Vector Shift Right
 VSR PPC64LE 000100 vrt:5 vra:5 vrb:5 01011000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:321 v2.03 vsrab Vector Shift Right Algebraic Byte
 VSRAB PPC64LE 000100 vrt:5 vra:5 vrb:5 01100000100
 
@@ -3507,15 +3508,15 @@ VSRAB PPC64LE 000100 vrt:5 vra:5 vrb:5 01100000100
 # format:VX book:I page:321 v2.07 vsrad Vector Shift Right Algebraic Dword
 VSRAD PPC64LE 000100 vrt:5 vra:5 vrb:5 01111000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:321 v2.03 vsrah Vector Shift Right Algebraic Hword
 VSRAH PPC64LE 000100 vrt:5 vra:5 vrb:5 01101000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:321 v2.03 vsraw Vector Shift Right Algebraic Word
 VSRAW PPC64LE 000100 vrt:5 vra:5 vrb:5 01110000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:320 v2.03 vsrb Vector Shift Right Byte
 VSRB PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000100
 
@@ -3523,11 +3524,11 @@ VSRB PPC64LE 000100 vrt:5 vra:5 vrb:5 01000000100
 # format:VX book:I page:320 v2.07 vsrd Vector Shift Right Dword
 VSRD PPC64LE 000100 vrt:5 vra:5 vrb:5 11011000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:320 v2.03 vsrh Vector Shift Right Hword
 VSRH PPC64LE 000100 vrt:5 vra:5 vrb:5 01001000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:266 v2.03 vsro Vector Shift Right by Octet
 VSRO PPC64LE 000100 vrt:5 vra:5 vrb:5 10001001100
 
@@ -3535,7 +3536,7 @@ VSRO PPC64LE 000100 vrt:5 vra:5 vrb:5 10001001100
 # format:X book:I page:267 v3.0 vsrv Vector Shift Right Variable
 VSRV PPC64LE 000100 vrt:5 vra:5 vrb:5 11100000100
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:320 v2.03 vsrw Vector Shift Right Word
 VSRW PPC64LE 000100 vrt:5 vra:5 vrb:5 01010000100
 
@@ -3543,7 +3544,7 @@ VSRW PPC64LE 000100 vrt:5 vra:5 vrb:5 01010000100
 # format:VX book:I page:281 v2.07 vsubcuq Vector Subtract & write Carry Unsigned Qword
 VSUBCUQ PPC64LE 000100 vrt:5 vra:5 vrb:5 10101000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:277 v2.03 vsubcuw Vector Subtract & Write Carry-Out Unsigned Word
 VSUBCUW PPC64LE 000100 vrt:5 vra:5 vrb:5 10110000000
 
@@ -3555,27 +3556,27 @@ VSUBECUQ PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 111111
 # format:VA book:I page:281 v2.07 vsubeuqm Vector Subtract Extended Unsigned Qword Modulo
 VSUBEUQM PPC64LE 000100 vrt:5 vra:5 vrb:5 vrc:5 111110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:324 v2.03 vsubfp Vector Subtract Floating-Point
 VSUBFP PPC64LE 000100 vrt:5 vra:5 vrb:5 00001001010
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:277 v2.03 vsubsbs Vector Subtract Signed Byte Saturate
 VSUBSBS PPC64LE 000100 vrt:5 vra:5 vrb:5 11100000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:277 v2.03 vsubshs Vector Subtract Signed Hword Saturate
 VSUBSHS PPC64LE 000100 vrt:5 vra:5 vrb:5 11101000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:278 v2.03 vsubsws Vector Subtract Signed Word Saturate
 VSUBSWS PPC64LE 000100 vrt:5 vra:5 vrb:5 11110000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:279 v2.03 vsububm Vector Subtract Unsigned Byte Modulo
 VSUBUBM PPC64LE 000100 vrt:5 vra:5 vrb:5 10000000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:280 v2.03 vsububs Vector Subtract Unsigned Byte Saturate
 VSUBUBS PPC64LE 000100 vrt:5 vra:5 vrb:5 11000000000
 
@@ -3583,11 +3584,11 @@ VSUBUBS PPC64LE 000100 vrt:5 vra:5 vrb:5 11000000000
 # format:VX book:I page:279 v2.07 vsubudm Vector Subtract Unsigned Dword Modulo
 VSUBUDM PPC64LE 000100 vrt:5 vra:5 vrb:5 10011000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:279 v2.03 vsubuhm Vector Subtract Unsigned Hword Modulo
 VSUBUHM PPC64LE 000100 vrt:5 vra:5 vrb:5 10001000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:280 v2.03 vsubuhs Vector Subtract Unsigned Hword Saturate
 VSUBUHS PPC64LE 000100 vrt:5 vra:5 vrb:5 11001000000
 
@@ -3595,43 +3596,43 @@ VSUBUHS PPC64LE 000100 vrt:5 vra:5 vrb:5 11001000000
 # format:VX book:I page:281 v2.07 vsubuqm Vector Subtract Unsigned Qword Modulo
 VSUBUQM PPC64LE 000100 vrt:5 vra:5 vrb:5 10100000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:279 v2.03 vsubuwm Vector Subtract Unsigned Word Modulo
 VSUBUWM PPC64LE 000100 vrt:5 vra:5 vrb:5 10010000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:280 v2.03 vsubuws Vector Subtract Unsigned Word Saturate
 VSUBUWS PPC64LE 000100 vrt:5 vra:5 vrb:5 11010000000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:292 v2.03 vsum2sws Vector Sum across Half Signed Word Saturate
 VSUM2SWS PPC64LE 000100 vrt:5 vra:5 vrb:5 11010001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:293 v2.03 vsum4sbs Vector Sum across Quarter Signed Byte Saturate
 VSUM4SBS PPC64LE 000100 vrt:5 vra:5 vrb:5 11100001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:293 v2.03 vsum4shs Vector Sum across Quarter Signed Hword Saturate
 VSUM4SHS PPC64LE 000100 vrt:5 vra:5 vrb:5 11001001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:294 v2.03 vsum4ubs Vector Sum across Quarter Unsigned Byte Saturate
 VSUM4UBS PPC64LE 000100 vrt:5 vra:5 vrb:5 11000001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:292 v2.03 vsumsws Vector Sum across Signed Word Saturate
 VSUMSWS PPC64LE 000100 vrt:5 vra:5 vrb:5 11110001000
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:255 v2.03 vupkhpx Vector Unpack High Pixel
 VUPKHPX PPC64LE 000100 vrt:5 00000 vrb:5 01101001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:256 v2.03 vupkhsb Vector Unpack High Signed Byte
 VUPKHSB PPC64LE 000100 vrt:5 00000 vrb:5 01000001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:256 v2.03 vupkhsh Vector Unpack High Signed Hword
 VUPKHSH PPC64LE 000100 vrt:5 00000 vrb:5 01001001110
 
@@ -3639,15 +3640,15 @@ VUPKHSH PPC64LE 000100 vrt:5 00000 vrb:5 01001001110
 # format:VX book:I page:256 v2.07 vupkhsw Vector Unpack High Signed Word
 VUPKHSW PPC64LE 000100 vrt:5 00000 vrb:5 11001001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:255 v2.03 vupklpx Vector Unpack Low Pixel
 VUPKLPX PPC64LE 000100 vrt:5 00000 vrb:5 01111001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:256 v2.03 vupklsb Vector Unpack Low Signed Byte
 VUPKLSB PPC64LE 000100 vrt:5 00000 vrb:5 01010001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:256 v2.03 vupklsh Vector Unpack Low Signed Hword
 VUPKLSH PPC64LE 000100 vrt:5 00000 vrb:5 01011001110
 
@@ -3655,7 +3656,7 @@ VUPKLSH PPC64LE 000100 vrt:5 00000 vrb:5 01011001110
 # format:VX book:I page:256 v2.07 vupklsw Vector Unpack Low Signed Word
 VUPKLSW PPC64LE 000100 vrt:5 00000 vrb:5 11011001110
 
-@v2.03
+@v2.03,AltiVec
 # format:VX book:I page:316 v2.03 vxor Vector Logical XOR
 VXOR PPC64LE 000100 vrt:5 vra:5 vrb:5 10011000100
 
