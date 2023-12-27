@@ -1042,11 +1042,11 @@ LHZX PPC64LE 011111 rt:5 ra:5 rb:5 01000101110 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-# not supported in little-endian mode
-## format:D book:I page:63 v:P1 lmw Load Multiple Word
-#LMW PPC64 101110 rt:5 ra:5 imm:16 \
-#!constraints { $rt != 1 && $ra != 1 && $rt != 13 && $ra != 13 && $ra != 0 && $ra != $rt && $imm <= 32752; } \
-#!memory { reg_plus_imm($ra, $imm); }
+# LMW is not supported in little-endian mode
+# format:D book:I page:63 v:P1 lmw Load Multiple Word
+LMW PPC64BE 101110 rt:5 ra:5 imm:16 \
+!constraints { $rt > 13 && $ra > 1 && $ra != 13 && $imm <= 32752; } \
+!memory { reg_plus_imm($ra, $imm); }
 
 # format:DQ book:I page:59 v2.03 lq Load Qword
 LQ PPC64LE 111000 rtp:5 ra:5 imm:12 0000 \
@@ -1741,8 +1741,8 @@ STHX PPC64LE 011111 rs:5 ra:5 rb:5 01100101110 \
 
 # STMW is not supported in little-endian mode
 # format:D book:I page:63 v:P1 stmw Store Multiple Word
-STMW PPC64BE 101111 rt:5 ra:5 imm:16 \
-!constraints { $rt != 1 && $ra != 1 && $rt != 13 && $ra != 13 && $ra != 0 && $imm <= 32752; } \
+STMW PPC64BE 101111 rs:5 ra:5 imm:16 \
+!constraints { $rs > 13 && $ra > 1 && $ra != 13 && $ra < $rs && $imm <= 32752; } \
 !memory { reg_plus_imm($ra, $imm); }
 
 # STSWI is not supported in little-endian mode
