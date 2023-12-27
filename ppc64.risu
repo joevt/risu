@@ -14,6 +14,30 @@
 # Input file for risugen defining PowerPC64 instructions
 .mode ppc64
 
+# Included:
+#   P1     Instruction introduced in POWER Architecture.
+#   P2     Instruction introduced in POWER2 Architecture.
+#   PPC    Instruction introduced in PowerPC Architecture prior to v2.00.
+#   v2.00  Instruction introduced in PowerPC Architecture Version 2.00.
+#   v2.01  Instruction introduced in PowerPC Architecture Version 2.01.
+#   v2.02  Instruction introduced in PowerPC Architecture Version 2.02.
+#   v2.03  Instruction introduced in Power ISA Version 2.03.
+#   v2.04  Instruction introduced in Power ISA Version 2.04. (no instructions added)
+#   v2.05  Instruction introduced in Power ISA Version 2.05.
+#   v2.06  Instruction introduced in Power ISA Version 2.06.
+#   v2.07  Instruction introduced in Power ISA Version 2.07.
+#   v3.0   Instruction introduced in Power ISA Version 3.0.
+#
+# Not Included:
+#   P1-    Instruction introduced in POWER Architecture and dropped in later architectures.
+#   v3.0B  Instruction introduced in Power ISA Version 3.0B.
+#   v3.0C  Instruction introduced in Power ISA Version 3.0C.
+#   v3.1   Instruction introduced in Power ISA Version 3.1.
+#
+# Encodings:
+#   PPC64LE  Instruction supported in little-endian and big-endian modes.
+#   PPC64BE  Instruction supported in big-endian mode only.
+#
 # format:XO book:I page:70 v:P1 SR add Add
 ADD PPC64LE 011111 rt:5 ra:5 rb:5 01000010100 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
