@@ -714,7 +714,7 @@ sub reg_plus_reg($$@)
     my $low_bits;
     my $high_bits;
 
-    $value = int rand(0x100000000);
+    $value = irand(0xffffffff);
 
     # Has to be loaded like this because we can't just load a 32 bit value
     $low_bits = $value;
@@ -757,7 +757,7 @@ sub gen_one_insn($$)
 
     INSN: while(1) {
         my ($forcecond, $rec) = @_;
-        my $insn = int(rand(0x100000000));
+        my $insn = irand(0xffffffff);
         my $insnname = $rec->{name};
         my $insnwidth = $rec->{width};
         my $fixedbits = $rec->{fixedbits};

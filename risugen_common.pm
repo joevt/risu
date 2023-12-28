@@ -23,15 +23,27 @@ BEGIN {
     require Exporter;
 
     our @ISA = qw(Exporter);
-    our @EXPORT = qw(open_bin close_bin set_endian insn32 insn16 $bytecount
-                   progress_start progress_update progress_end
-                   eval_with_fields is_pow_of_2 sextract ctz
-                   dump_insn_details);
+    our @EXPORT = qw(
+        irand
+        open_bin close_bin
+        set_endian
+        insn32 insn16 $bytecount
+        progress_start progress_update progress_end
+        eval_with_fields is_pow_of_2 sextract ctz
+        dump_insn_details
+    );
 }
 
 our $bytecount;
 
 my $bigendian = 0;
+
+# Return a random number between 0 and $ inclusive
+sub irand($)
+{
+    my ($max) = @_;
+    return int rand($max + 1);
+}
 
 # Set the endianness when insn32() and insn16() write to the output
 # (default is little endian, 0).

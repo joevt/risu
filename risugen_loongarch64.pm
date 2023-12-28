@@ -256,7 +256,7 @@ sub write_memblock_setup()
     write_jump_fwd($datalen);                #insn 4
 
     for(my $i = 0; $i < $datalen / 4; $i++) {
-        insn32(rand(0xffffffff));
+        insn32(irand(0xffffffff));
     }
 }
 
@@ -280,7 +280,7 @@ sub write_random_fpreg_var($)
         # NaN (5%)
         # (plus a tiny chance of generating +-Inf)
         $randomize_low = 1;
-        $high = rand(0xffffffff) | 0x7ff00000;
+        $high = irand(0xffffffff) | 0x7ff00000;
     } elsif ($r < 15) {
         # Infinity (5%)
         $low = 0;
@@ -290,17 +290,17 @@ sub write_random_fpreg_var($)
         # Denormalized number (15%)
         # (plus tiny chance of +-0)
         $randomize_low = 1;
-        $high = rand(0xffffffff) & ~0x7ff00000;
+        $high = irand(0xffffffff) & ~0x7ff00000;
     } else {
         # Normalized number (70%)
         # (plus a small chance of the other cases)
         $randomize_low = 1;
-        $high = rand(0xffffffff);
+        $high = irand(0xffffffff);
     }
 
     for (my $i = 1; $i < $precision; $i++) {
         if ($randomize_low) {
-            $low = rand(0xffffffff);
+            $low = irand(0xffffffff);
         }
         insn32($low);
     }
@@ -320,7 +320,7 @@ sub write_random_loongarch64_fpdata()
 
     # Align safety
     for (my $i = 0; $i < ($align / 4); $i++) {
-        insn32(rand(0xffffffff));
+        insn32(irand(0xffffffff));
     }
 
     for (my $i = 0; $i < 32; $i++) {
@@ -355,9 +355,9 @@ sub write_random_loongarch64_fpdata()
 sub write_random_regdata()
 {
     # General purpose registers, skip r2
-    write_mov_ri(1, rand(0x7fffffff)); # init r1
+    write_mov_ri(1, irand(0x7fffffff)); # init r1
     for  (my $i = 3; $i < 32; $i++) {
-        write_mov_ri($i, rand(0x7fffffff));
+        write_mov_ri($i, irand(0x7fffffff));
     }
 }
 
@@ -409,7 +409,7 @@ sub gen_one_insn($$)
 
     INSN: while(1) {
         my ($forcecond, $rec) = @_;
-        my $insn = int(rand(0xffffffff));
+        my $insn = irand(0xffffffff);
         my $insnname = $rec->{name};
         my $insnwidth = $rec->{width};
         my $fixedbits = $rec->{fixedbits};

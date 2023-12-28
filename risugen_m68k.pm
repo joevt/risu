@@ -83,10 +83,10 @@ sub write_random_regdata()
 {
     # general purpose registers (except A6 (FP) and A7 (SP))
     for (my $i = 0; $i < 14; $i++) {
-        write_mov_ri($i, rand(0xffffffff));
+        write_mov_ri($i, irand(0xffffffff));
     }
     # initialize condition register
-    write_mov_ccr(rand(0x10000));
+    write_mov_ccr(irand(0xffff));
 }
 
 my $OP_COMPARE = 0;        # compare registers
@@ -108,7 +108,7 @@ sub gen_one_insn($$)
 
     INSN: while(1) {
         my ($forcecond, $rec) = @_;
-        my $insn = int(rand(0xffffffff));
+        my $insn = irand(0xffffffff);
         my $insnname = $rec->{name};
         my $insnwidth = $rec->{width};
         my $fixedbits = $rec->{fixedbits};

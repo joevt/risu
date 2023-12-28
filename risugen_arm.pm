@@ -372,7 +372,7 @@ sub write_random_fpreg_var($)
         # NaN (5%)
         # (plus a tiny chance of generating +-Inf)
         $randomize_low = 1;
-        $high = rand(0xffffffff) | 0x7ff00000;
+        $high = irand(0xffffffff) | 0x7ff00000;
     } elsif ($r < 15) {
         # Infinity (5%)
         $low = 0;
@@ -382,17 +382,17 @@ sub write_random_fpreg_var($)
         # Denormalized number (15%)
         # (plus tiny chance of +-0)
         $randomize_low = 1;
-        $high = rand(0xffffffff) & ~0x7ff00000;
+        $high = irand(0xffffffff) & ~0x7ff00000;
     } else {
         # Normalized number (70%)
         # (plus a small chance of the other cases)
         $randomize_low = 1;
-        $high = rand(0xffffffff);
+        $high = irand(0xffffffff);
     }
 
     for (my $i = 1; $i < $precision; $i++) {
         if ($randomize_low) {
-            $low = rand(0xffffffff);
+            $low = irand(0xffffffff);
         }
         insn32($low);
     }
@@ -410,8 +410,8 @@ sub write_random_double_fpreg()
     } elsif ($r < 10) {
         # NaN (5%)
         # (plus a tiny chance of generating +-Inf)
-        $low = rand(0xffffffff);
-        $high = rand(0xffffffff) | 0x7ff00000;
+        $low = irand(0xffffffff);
+        $high = irand(0xffffffff) | 0x7ff00000;
     } elsif ($r < 15) {
         # Infinity (5%)
         $low = 0;
@@ -420,13 +420,13 @@ sub write_random_double_fpreg()
     } elsif ($r < 30) {
         # Denormalized number (15%)
         # (plus tiny chance of +-0)
-        $low = rand(0xffffffff);
-        $high = rand(0xffffffff) & ~0x7ff00000;
+        $low = irand(0xffffffff);
+        $high = irand(0xffffffff) & ~0x7ff00000;
     } else {
         # Normalized number (70%)
         # (plus a small chance of the other cases)
-        $low = rand(0xffffffff);
-        $high = rand(0xffffffff);
+        $low = irand(0xffffffff);
+        $high = irand(0xffffffff);
     }
     insn32($low);
     insn32($high);
@@ -443,7 +443,7 @@ sub write_random_single_fpreg()
     } elsif ($r < 10) {
         # NaN (5%)
         # (plus a tiny chance of generating +-Inf)
-        $value = rand(0xffffffff) | 0x7f800000;
+        $value = irand(0xffffffff) | 0x7f800000;
     } elsif ($r < 15) {
         # Infinity (5%)
         $value = 0x7f800000;
@@ -451,11 +451,11 @@ sub write_random_single_fpreg()
     } elsif ($r < 30) {
         # Denormalized number (15%)
         # (plus tiny chance of +-0)
-        $value = rand(0xffffffff) & ~0x7f800000;
+        $value = irand(0xffffffff) & ~0x7f800000;
     } else {
         # Normalized number (70%)
         # (plus a small chance of the other cases)
-        $value = rand(0xffffffff);
+        $value = irand(0xffffffff);
     }
     insn32($value);
 }
@@ -504,7 +504,7 @@ sub write_random_arm_regdata($)
     }
     #  .word [14 words of data for r0..r12,r14]
     for (0..13) {
-        insn32(rand(0xffffffff));
+        insn32(irand(0xffffffff));
     }
     # next:
     # clear the flags (NZCVQ and GE): msr APSR_nzcvqg, #0
@@ -522,7 +522,7 @@ sub write_random_aarch64_fpdata()
 
     # align safety
     for (my $i = 0; $i < ($align / 4); $i++) {
-        insn32(rand(0xffffffff));
+        insn32(irand(0xffffffff));
     };
 
     for (my $rt = 0; $rt <= 31; $rt++) {
@@ -561,7 +561,7 @@ sub write_random_aarch64_svedata()
     }
     for (my $rt = 0; $rt <= 15; $rt++) {
         for (my $q = 0; $q < $vq; $q++) {
-            insn16(rand(0xffff));
+            insn16(irand(0xffff));
         }
     }
 
@@ -595,7 +595,7 @@ sub write_random_aarch64_regdata($$)
     # general purpose registers
     for (my $i = 0; $i <= 30; $i++) {
         # TODO full 64 bit pattern instead of 32
-        write_mov_ri($i, rand(0xffffffff));
+        write_mov_ri($i, irand(0xffffffff));
     }
 }
 
@@ -692,7 +692,7 @@ sub write_memblock_setup()
     write_jump_fwd($datalen);                # insn 4
 
     for (my $i = 0; $i < $datalen / 4; $i++) {
-        insn32(rand(0xffffffff));
+        insn32(irand(0xffffffff));
     }
     # next:
 
@@ -961,7 +961,7 @@ sub gen_one_insn($$)
 
     INSN: while(1) {
         my ($forcecond, $rec) = @_;
-        my $insn = int(rand(0xffffffff));
+        my $insn = irand(0xffffffff);
         my $insnname = $rec->{name};
         my $insnwidth = $rec->{width};
         my $fixedbits = $rec->{fixedbits};
