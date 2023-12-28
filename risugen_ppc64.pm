@@ -126,7 +126,7 @@ sub write_random_ppc64_fpdata()
 {
     for (my $i = 0; $i < 32; $i++) {
         # load a random doubleword value at r0
-        write_mov_ri64(rand(0xfffff), rand(0xfffff));
+        write_mov_ri64(irand(0xfffff), irand(0xfffff));
         # since the EA is r1+16, load such value in FP reg
         insn32((0x32 << 26) | ($i << 21) | (0x1 << 16) | 0x10);
     }
@@ -136,7 +136,7 @@ sub write_random_ppc64_vrdata()
 {
     for (my $i = 0; $i < 32; $i++) {
         # load a random doubleword value at r0
-        write_mov_ri128(rand(0xffff), rand(0xffff), rand(0xfffff), rand(0xfffff));
+        write_mov_ri128(irand(0xffff), irand(0xffff), irand(0xfffff), irand(0xfffff));
         # li r0, 16
         write_mov_ri16(0, 0x10);
         # lvx vr$i, r1, r0
@@ -157,7 +157,7 @@ sub write_random_regdata()
         if ($i == 1 || $i == 13) {
             next;
         }
-        write_mov_ri($i, rand(0xffffffff));
+        write_mov_ri($i, irand(0xffffffff));
     }
 }
 
@@ -240,7 +240,7 @@ sub get_offset()
     # We require the offset to not be within 256 bytes of either
     # end, to (more than) allow for the worst case data transfer, which is
     # 16 * 64 bit regs
-    my $offset = (rand(2048 - 512) + 256) & ~($alignment_restriction - 1);
+    my $offset = (irand(2048 - 512) + 256) & ~($alignment_restriction - 1);
     return $offset
 }
 
@@ -297,7 +297,7 @@ sub gen_one_insn($$)
 
     INSN: while(1) {
         my ($forcecond, $rec) = @_;
-        my $insn = int(rand(0xffffffff));
+        my $insn = irand(0xffffffff);
         my $insnname = $rec->{name};
         my $insnwidth = $rec->{width};
         my $fixedbits = $rec->{fixedbits};

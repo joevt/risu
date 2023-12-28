@@ -54,16 +54,16 @@ sub write_random_regdata()
 {
     # Floating point registers
     for (my $i = 0; $i < 16; $i++) {
-        write_mov_fp($i, rand(0xffffffff));
+        write_mov_fp($i, irand(0xffffffff));
     }
 
     # Load FPC (via r0)
-    write_mov_ri(0, 0, (rand(0xffffffff) & 0x00fcff77));
+    write_mov_ri(0, 0, (irand(0xffffffff) & 0x00fcff77));
     insn32(0xb3840000);
 
     # general purpose registers
     for (my $i = 0; $i < 16; $i++) {
-        write_mov_ri($i, rand(0xffffffff), rand(0xffffffff));
+        write_mov_ri($i, irand(0xffffffff), irand(0xffffffff));
     }
 }
 
@@ -83,7 +83,7 @@ sub gen_one_insn($$)
 
     INSN: while(1) {
         my ($forcecond, $rec) = @_;
-        my $insn = int(rand(0xffffffff));
+        my $insn = irand(0xffffffff);
         my $insnname = $rec->{name};
         my $insnwidth = $rec->{width};
         my $fixedbits = $rec->{fixedbits};

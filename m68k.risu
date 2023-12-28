@@ -37,7 +37,7 @@ ANDIB M68000 00000010 00 000 Dx:3 00000000 data:8
 ANDIW M68000 00000010 01 000 Dx:3 data:16
 # andi #imm,ccr
 ANDICCR M68000 0000001000111100 data:16 \
-                 !constraints { write_mov_ccr(rand(0x100)); 1; }
+                 !constraints { write_mov_ccr(irand(0xff)); 1; }
 # asl/asr $dx,$dy , asl/asr #im3,$r
 ASx   M68000 1110 count:3 d:1 size:2 i:1 00 r:3 \
                  !constraints { $size != 0b11; }
@@ -113,26 +113,26 @@ CMPIW M68000 00001100 01 000 Dx:3 data:16
 # divs $dx,$dy
 DIVS  M68000 1000 Dy:3 111 000 Dx:3 \
                  !constraints { \
-                        write_mov_di($Dx, rand(0xffffffff) + 1); \
-                        1;                                       \
+                        write_mov_di($Dx, irand(0xfffffffe) + 1); \
+                        1; \
                       }
 # divsl $dx,$dr:$dq
 DIVSL M68020 0100110001 000 Dx:3  0 Dq:3 1 size:1 0000000 Dr:3 \
                  !constraints { \
-                        write_mov_di($Dx, rand(0xffffffff) + 1); \
-                        1;                                       \
+                        write_mov_di($Dx, irand(0xfffffffe) + 1); \
+                        1; \
                       }
 # divu $dx,$dy
 DIVU  M68000 1000 Dy:3 011 000 Dx:3 \
                  !constraints { \
-                        write_mov_di($Dx, rand(0xffffffff) + 1); \
+                        write_mov_di($Dx, irand(0xfffffffe) + 1); \
                         1;                                       \
                       }
 # divul $dx,$dr:$dq
 DIVUL M68020 0100110001 000 Dx:3  0 Dq:3 0 size:1 0000000 Dr:3 \
                  !constraints { \
-                        write_mov_di($Dx, rand(0xffffffff) + 1); \
-                        1;                                       \
+                        write_mov_di($Dx, irand(0xfffffffe) + 1); \
+                        1; \
                       }
 # eor $dx,$dy
 EOR   M68000 1011 Dx:3 1 size:2 000 Dy:3 \
@@ -142,7 +142,7 @@ EORIB M68000 00001010 00 000 Dx:3 00000000 data:8
 EORIW M68000 00001010 01 000 Dx:3 data:16
 # eori #imm,ccr
 EORICCR M68000 0000101000111100 data:16 \
-                 !constraints { write_mov_ccr(rand(0x100)); 1; }
+                 !constraints { write_mov_ccr(irand(0xff)); 1; }
 # exg $dx,$dy
 EXG_d M68000 1100 Dx:3 1 01000 Dy:3
 # exg $ax,$ay
@@ -201,7 +201,7 @@ ORIB M68000 00000000 00 000 Dx:3 00000000 data:8
 ORIW M68000 00000000 01 000 Dx:3 data:16
 # ori #imm,ccr
 ORICCR M68000 0000000000111100 data:16 \
-                 !constraints { write_mov_ccr(rand(0x100)); 1; }
+                 !constraints { write_mov_ccr(irand(0xff)); 1; }
 # rol/ror $dx,$dy , rol/ror #im3,$r
 ROx   M68000 1110 count:3 d:1 size:2 i:1 11 r:3 \
                  !constraints { $size != 0b11; }
@@ -217,7 +217,7 @@ SBCD  M68000 1000 Dx:3 10000 0 Dy:3 \
                       }
 # Scc $dx
 SCC M68000 0101 cond:4 11 000 dx:3 \
-                 !constraints { write_mov_ccr(rand(0x100)); 1; }
+                 !constraints { write_mov_ccr(irand(0xff)); 1; }
 # sub $dx,$dy
 SUB   M68000 1001 Dx:3 0 opmode:2 000 Dy:3 \
                  !constraints { $opmode != 0b11; }
