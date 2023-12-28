@@ -48,8 +48,8 @@ sub write_mov_ri16($$)
 {
     my ($rd, $imm) = @_;
 
-    # li rd,immediate
-    insn32(0xe << 26 | $rd << 21 | $imm);
+    # li rd,immediate = addi rd, 0, $imm ; includes sign extension
+    insn32(0xe << 26 | $rd << 21 | ($imm & 0xffff));
 }
 
 sub write_mov_ri32($$)
@@ -57,7 +57,7 @@ sub write_mov_ri32($$)
     my ($rd, $imm) = @_;
 
     # lis rd,immediate@h
-    insn32(0xf << 26 | $rd << 21 | ($imm >> 16));
+    insn32(0xf << 26 | $rd << 21 | (($imm >> 16) & 0xffff));
     # ori rd,rd,immediate@l
     insn32((0x18 << 26) | ($rd << 21) | ($rd << 16) | ($imm & 0xffff));
 }
@@ -70,30 +70,18 @@ sub write_add_ri($$$)
     insn32((0xe << 26) | ($rt << 21) | ($ra << 16) | ($imm & 0xffff));
 }
 
-sub write_sxt32($$)
-{
-    my ($ra, $rs) = @_;
-
-    insn32((0x1f << 26) | ($rs << 21) | ($ra << 16) | 0x7b4);
-}
-
 sub write_mov_ri($$)
 {
     my ($rd, $imm) = @_;
 
-    if (($imm >> 16) & 0xffff) {
+    if ((($imm & 0xffff8000) != 0) && (($imm & 0xffff8000) != 0xffff8000)) {
         write_mov_ri32($rd, $imm);
     } else {
         write_mov_ri16($rd, $imm);
     }
-
-    if ($imm < 0) {
-        # sign extend to allow small negative imm constants
-        write_sxt32($rd, $rd);
-    }
 }
 
-sub write_mov_ri64($$)
+sub write_store_64($$)
 {
     my ($imh, $iml) = @_;
 
@@ -112,7 +100,7 @@ sub write_mov_ri64($$)
     insn32((0x3e << 26) | (20 << 21) | (1 << 16) | 0x10);
 }
 
-sub write_mov_ri128($$$$)
+sub write_store_128($$$$)
 {
     my ($imhh, $imh, $iml, $imll) = @_;
 
@@ -138,9 +126,9 @@ sub write_mov_ri128($$$$)
 sub write_random_ppc64_fpdata()
 {
     for (my $i = 0; $i < 32; $i++) {
-        # load a random doubleword value at r0
-        write_mov_ri64(irand(0xfffff), irand(0xfffff));
-        # since the EA is r1+16, load such value in FP reg
+        # store a random doubleword value at r1+16
+        write_store_64(irand(0xfffff), irand(0xfffff));
+        # lfd f$i, 0x10(r1)
         insn32((0x32 << 26) | ($i << 21) | (0x1 << 16) | 0x10);
     }
 }
@@ -148,10 +136,10 @@ sub write_random_ppc64_fpdata()
 sub write_random_ppc64_vrdata()
 {
     for (my $i = 0; $i < 32; $i++) {
-        # load a random doubleword value at r0
-        write_mov_ri128(irand(0xffff), irand(0xffff), irand(0xfffff), irand(0xfffff));
+        # store a random doubleword value at r1+16
+        write_store_128(irand(0xffff), irand(0xffff), irand(0xfffff), irand(0xfffff));
         # li r0, 16
-        write_mov_ri16(0, 0x10);
+        write_mov_ri(0, 0x10);
         # lvx vr$i, r1, r0
         insn32((0x1f << 26) | ($i << 21) | (0x1 << 16) | 0x2ce);
     }
