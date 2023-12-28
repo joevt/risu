@@ -20,7 +20,6 @@ use Getopt::Long;
 use Data::Dumper;
 use Module::Load;
 use Text::Balanced qw { extract_bracketed extract_multiple };
-use List::Compare::Functional qw( get_intersection );
 # Make sure we can find the per-CPU-architecture modules in the
 # same directory as this script.
 use FindBin;
@@ -38,7 +37,7 @@ my $arch = "";
 # Current groups, updated by @GroupName
 my @insn_groups;
 
-my @groups = ();                # include groups
+my $groups = "";                # include groups
 my @pattern_re = ();            # include pattern
 my @not_pattern_re = ();        # exclude pattern
 
@@ -256,15 +255,23 @@ sub parse_config_file($)
     close(CFILE) or die "can't close $file: $!";
 }
 
+sub evaluate_groups ($$)
+{
+    my ($insn_groups, $groupexpr) = @_;
+    $groupexpr =~ s|,| && |g;
+    $groupexpr =~ s|(\b[_A-Za-z][-:.*\w]*)|grep(/^$1$/, @$insn_groups)|eg;
+    eval $groupexpr;
+}
+
 # Select a subset of instructions based on our filter preferences
 sub select_insn_keys ()
 {
     @insn_keys = sort keys %insn_details;
-    # Limit insn keys to those in all reqested @groups
-    if (@groups) {
+    # Limit insn keys to those in all reqested $groups
+    if ($groups) {
         @insn_keys = grep {
             defined($insn_details{$_}->{groups}) &&
-                scalar @groups == get_intersection([$insn_details{$_}->{groups}, \@groups])
+                evaluate_groups($insn_details{$_}->{groups}, $groups);
         } @insn_keys
     }
     # Get a list of the insn keys which are permitted by the re patterns
@@ -297,6 +304,9 @@ Valid options:
     --condprob p : [ARM only] make instructions conditional with probability p
                    (default is 0, ie all instructions are always executed)
     --group name[,name..]: only use instructions in all defined groups
+    --group be   : only use instructions if boolean expression of groups is true.
+                   Use Boolean operators ||, &&, ! and paranethesis. A group
+                   name's value is 1 if the instruction is part of that group.
     --pattern re[,re...] : only use instructions matching regular expression
                    Each re must match a full word (that is, we match on
                    the perl regex '\\b((re)|(re))\\b'). This means that
@@ -327,7 +337,7 @@ sub main()
     GetOptions( "help" => sub { usage(); exit(0); },
                 "numinsns=i" => \$numinsns,
                 "fpscr=o" => \$fpscr,
-                "group=s" => \@groups,
+                "group=s" => \$groups,
                 "pattern=s" => \@pattern_re,
                 "not-pattern=s" => \@not_pattern_re,
                 "condprob=f" => sub {
@@ -343,7 +353,6 @@ sub main()
     # allow "--pattern re,re" and "--pattern re --pattern re"
     @pattern_re = split(/,/,join(',',@pattern_re));
     @not_pattern_re = split(/,/,join(',',@not_pattern_re));
-    @groups = split(/,/,join(',',@groups));
 
     if ($#ARGV != 1) {
         usage();
