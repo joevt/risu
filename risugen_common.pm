@@ -31,8 +31,19 @@ BEGIN {
         progress_start progress_update progress_end
         eval_with_fields is_pow_of_2 sextract ctz
         dump_insn_details
+        $OP_COMPARE
+        $OP_TESTEND
+        $OP_SETMEMBLOCK
+        $OP_GETMEMBLOCK
+        $OP_COMPAREMEM
     );
 }
+
+our $OP_COMPARE = 0;        # compare registers
+our $OP_TESTEND = 1;        # end of test, stop
+our $OP_SETMEMBLOCK = 2;    # set memory block
+our $OP_GETMEMBLOCK = 3;    # get the address of memory block
+our $OP_COMPAREMEM = 4;     # compare memory block
 
 our $bytecount;
 

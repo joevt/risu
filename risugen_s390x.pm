@@ -67,9 +67,6 @@ sub write_random_regdata()
     }
 }
 
-my $OP_COMPARE = 0;        # compare registers
-my $OP_TESTEND = 1;        # end of test, stop
-
 sub write_random_register_data()
 {
     write_random_regdata();

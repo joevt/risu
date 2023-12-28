@@ -29,12 +29,6 @@ my $periodic_reg_random = 1;
 # Maximum alignment restriction permitted for a memory op.
 my $MAXALIGN = 64;
 
-my $OP_COMPARE = 0;        # compare registers
-my $OP_TESTEND = 1;        # end of test, stop
-my $OP_SETMEMBLOCK = 2;    # r4 is address of memory block (8192 bytes)
-my $OP_GETMEMBLOCK = 3;    # add the address of memory block to r4
-my $OP_COMPAREMEM = 4;     # compare memory block
-
 sub write_risuop($)
 {
     my ($op) = @_;
