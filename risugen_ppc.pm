@@ -37,9 +37,6 @@ my $MAXALIGN = 64;
 # First available slot in the stack
 my $available_stack_slot = 40;
 
-my $OP_COMPARE = 0;        # compare registers
-my $OP_TESTEND = 1;        # end of test, stop
-
 # convert float value to IEEE 754
 # input: floating point value (e.g. 1.23)
 # output: IEEE 754 single precision value

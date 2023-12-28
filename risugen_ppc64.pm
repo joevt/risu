@@ -192,12 +192,6 @@ sub clear_vr_registers()
     }
 }
 
-my $OP_COMPARE = 0;        # compare registers
-my $OP_TESTEND = 1;        # end of test, stop
-my $OP_SETMEMBLOCK = 2;    # r0 is address of memory block (8192 bytes)
-my $OP_GETMEMBLOCK = 3;    # add the address of memory block to r0
-my $OP_COMPAREMEM = 4;     # compare memory block
-
 sub write_random_register_data($)
 {
     my ($fp_enabled) = @_;
