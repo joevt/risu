@@ -161,6 +161,10 @@ sub clear_vr_registers()
     write_mov_ri(23, 0);
     # mtxer r23 ; zero the xer register
     insn32((31 << 26) | (23 << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1));
+    #li r23, -1
+    write_mov_ri(23, -1);
+    # mtspr vrsave, r23
+    insn32((31 << 26) | (23 << 21) | ((256 & 31) << 16) | ((256 >> 5) << 11) | (467 << 1));
 
     for (my $i = 0; $i < 32; $i++) {
         # vxor vi, vi, vi
