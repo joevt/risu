@@ -380,6 +380,7 @@ static void set_sigill_handler(void (*fn) (int, siginfo_t *, void *))
 
 uintptr_t image_start_address;
 entrypoint_fn *image_start;
+size_t image_size;
 
 static void load_image(const char *imgfile)
 {
@@ -395,14 +396,14 @@ static void load_image(const char *imgfile)
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    size_t len = st.st_size;
+    image_size = st.st_size;
     void *addr;
 
     /* Map writable because we include the memory area for store
      * testing in the image.
      */
     addr =
-        mmap(0, len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd,
+        mmap(0, image_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd,
              0);
     if (!addr) {
         perror("mmap");
