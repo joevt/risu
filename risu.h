@@ -68,7 +68,10 @@ typedef enum {
     RES_MISMATCH_OP,
     RES_BAD_IO,
     RES_BAD_MAGIC,
-    RES_BAD_SIZE,
+    RES_BAD_SIZE_HEADER,
+    RES_BAD_SIZE_REGINFO,
+    RES_BAD_SIZE_MEMBLOCK,
+    RES_BAD_SIZE_ZERO,
     RES_BAD_OP,
     RES_SIGBUS,
 } RisuResult;
