@@ -222,19 +222,19 @@ static RisuResult recv_register_info(struct reginfo *ri)
     case OP_SIGILL:
         /* If we can't store the data, report invalid size. */
         if (header.size > sizeof(*ri)) {
-            return RES_BAD_SIZE;
+            return RES_BAD_SIZE_HEADER;
         }
         respond(RES_OK);
         res = read_buffer(ri, header.size);
         if (res == RES_OK && header.size != reginfo_size(ri)) {
             /* The payload size is not self-consistent with the data. */
-            return RES_BAD_SIZE;
+            return RES_BAD_SIZE_REGINFO;
         }
         return res;
 
     case OP_COMPAREMEM:
         if (header.size != MEMBLOCKLEN) {
-            return RES_BAD_SIZE;
+            return RES_BAD_SIZE_MEMBLOCK;
         }
         respond(RES_OK);
         return read_buffer(other_memblock, MEMBLOCKLEN);
@@ -243,7 +243,7 @@ static RisuResult recv_register_info(struct reginfo *ri)
     case OP_GETMEMBLOCK:
     case OP_SETUPBEGIN:
     case OP_SETUPEND:
-        return header.size == 0 ? RES_OK : RES_BAD_SIZE;
+        return header.size == 0 ? RES_OK : RES_BAD_SIZE_ZERO;
 
     default:
         return RES_BAD_OP;
@@ -544,8 +544,23 @@ static int apprentice(void)
         result = EXIT_FAILURE;
         break;
 
-    case RES_BAD_SIZE:
-        fprintf(stderr, "Unexpected payload size: %u at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, signal_pc - image_start_address, signal_count);
+    case RES_BAD_SIZE_HEADER:
+        fprintf(stderr, "Payload size %u in header exceeds expected size %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, sizeof(struct reginfo), signal_pc - image_start_address, signal_count);
+        result = EXIT_FAILURE;
+        break;
+
+    case RES_BAD_SIZE_REGINFO:
+        fprintf(stderr, "Payload size %u in header doesn't match received payload size %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, reginfo_size(&ri[MASTER]), signal_pc - image_start_address, signal_count);
+        result = EXIT_FAILURE;
+        break;
+
+    case RES_BAD_SIZE_MEMBLOCK:
+        fprintf(stderr, "Payload size %u in header doesn't match the expected memory block payload size %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, MEMBLOCKLEN, signal_pc - image_start_address, signal_count);
+        result = EXIT_FAILURE;
+        break;
+
+    case RES_BAD_SIZE_ZERO:
+        fprintf(stderr, "Payload size %u in header is expected to be 0 at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, signal_pc - image_start_address, signal_count);
         result = EXIT_FAILURE;
         break;
 
