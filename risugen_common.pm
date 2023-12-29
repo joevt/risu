@@ -36,6 +36,8 @@ BEGIN {
         $OP_SETMEMBLOCK
         $OP_GETMEMBLOCK
         $OP_COMPAREMEM
+        $OP_SETUPBEGIN
+        $OP_SETUPEND
     );
 }
 
@@ -44,6 +46,8 @@ our $OP_TESTEND = 1;        # end of test, stop
 our $OP_SETMEMBLOCK = 2;    # set memory block
 our $OP_GETMEMBLOCK = 3;    # get the address of memory block
 our $OP_COMPAREMEM = 4;     # compare memory block
+our $OP_SETUPBEGIN = 5;     # setup instructions are going to be executed
+our $OP_SETUPEND = 6;       # no more setup instructions
 
 our $bytecount;
 

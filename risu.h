@@ -54,6 +54,8 @@ typedef enum {
     OP_SETMEMBLOCK = 2,
     OP_GETMEMBLOCK = 3,
     OP_COMPAREMEM = 4,
+    OP_SETUPBEGIN = 5,
+    OP_SETUPEND = 6,
 } RisuOp;
 
 /* Result of operation */
