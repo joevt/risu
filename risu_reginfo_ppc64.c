@@ -406,6 +406,11 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
                 ri->vrregs.vrregs[i][0], ri->vrregs.vrregs[i][1],
                 ri->vrregs.vrregs[i][2], ri->vrregs.vrregs[i][3]);
     }
+    fprintf(f, "\tvscr : %08x, %08x, %08x, %08x\n",
+            ri->vrregs.vscr[0], ri->vrregs.vscr[1],
+            ri->vrregs.vscr[2], ri->vrregs.vscr[3]
+    );
+    fprintf(f, "\tvrsave : %08x\n", ri->vrregs.vrsave);
 #ifdef __APPLE__
     fprintf(f, "\tvrsave2 : %08x\n", ri->vrregs.vrsave2);
     fprintf(f, "\tsave_vrvalid : %08x\n\n", ri->vrregs.save_vrvalid);
