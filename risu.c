@@ -42,6 +42,7 @@ static int comm_fd;
 static bool trace;
 static size_t signal_count;
 static uintptr_t signal_pc;
+static bool is_setup = false;
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
@@ -115,6 +116,9 @@ static RisuResult send_register_info(void *uc, void *siaddr)
 
     reginfo_init(&ri[MASTER], uc, siaddr);
     op = get_risuop(&ri[MASTER]);
+    if (is_setup && op == OP_SIGILL) {
+        return RES_OK;
+    }
 
     /* Write a header with PC/op to keep in sync */
     header.magic = RISU_MAGIC;
@@ -134,6 +138,8 @@ static RisuResult send_register_info(void *uc, void *siaddr)
         break;
     case OP_SETMEMBLOCK:
     case OP_GETMEMBLOCK:
+    case OP_SETUPBEGIN:
+    case OP_SETUPEND:
         header.size = 0;
         extra = NULL;
         break;
@@ -166,6 +172,10 @@ static RisuResult send_register_info(void *uc, void *siaddr)
     case OP_GETMEMBLOCK:
         paramreg = get_reginfo_paramreg(&ri[MASTER]);
         set_ucontext_paramreg(uc, paramreg + (uintptr_t)memblock);
+        break;
+    case OP_SETUPBEGIN:
+    case OP_SETUPEND:
+        is_setup = op == OP_SETUPBEGIN;
         break;
     default:
         abort();
@@ -231,6 +241,8 @@ static RisuResult recv_register_info(struct reginfo *ri)
 
     case OP_SETMEMBLOCK:
     case OP_GETMEMBLOCK:
+    case OP_SETUPBEGIN:
+    case OP_SETUPEND:
         return header.size == 0 ? RES_OK : RES_BAD_SIZE;
 
     default:
@@ -245,13 +257,15 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
     RisuOp op;
 
     reginfo_init(&ri[APPRENTICE], uc, siaddr);
+    op = get_risuop(&ri[APPRENTICE]);
+    if (is_setup && op == OP_SIGILL) {
+        return RES_OK;
+    }
 
     res = recv_register_info(&ri[MASTER]);
     if (res != RES_OK) {
         goto done;
     }
-
-    op = get_risuop(&ri[APPRENTICE]);
 
     switch (op) {
     case OP_COMPARE:
@@ -266,7 +280,7 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
             header.risu_op != OP_TESTEND &&
             header.risu_op != OP_SIGILL) {
             res = RES_MISMATCH_OP;
-        } else if (!reginfo_is_eq(&ri[MASTER], &ri[APPRENTICE])) {
+        } else if (!is_setup && !reginfo_is_eq(&ri[MASTER], &ri[APPRENTICE])) {
             /* register mismatch */
             res = RES_MISMATCH_REG;
         } else if (op != header.risu_op) {
@@ -306,6 +320,15 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
             /* memory mismatch */
             res = RES_MISMATCH_MEM;
         }
+        break;
+
+    case OP_SETUPBEGIN:
+    case OP_SETUPEND:
+        if (op != header.risu_op) {
+            res = RES_MISMATCH_OP;
+            break;
+        }
+        is_setup = op == OP_SETUPBEGIN;
         break;
 
     default:
@@ -456,6 +479,10 @@ static const char *op_name(RisuOp op)
         return "GETMEMBLOCK";
     case OP_COMPAREMEM:
         return "COMPAREMEM";
+    case OP_SETUPBEGIN:
+        return "SETUPBEGIN";
+    case OP_SETUPEND:
+        return "SETUPEND";
     }
     abort();
 }

@@ -185,7 +185,6 @@ sub write_random_register_data($)
     }
 
     write_random_regdata();
-    write_risuop($OP_COMPARE);
 }
 
 sub write_memblock_setup()
@@ -382,12 +381,18 @@ sub write_test_code($)
     print "Generating code using patterns: @keys...\n";
     progress_start(78, $numinsns);
 
+    write_risuop($OP_SETUPBEGIN);
+
     if (grep { defined($insn_details{$_}->{blocks}->{"memory"}) } @keys) {
         write_memblock_setup();
     }
 
     # memblock setup doesn't clean its registers, so this must come afterwards.
     write_random_register_data($fp_enabled);
+
+    write_risuop($OP_SETUPEND);
+
+    write_risuop($OP_COMPARE);
 
     for my $i (1..$numinsns) {
         my $insn_enc = $keys[int rand (@keys)];
@@ -398,7 +403,10 @@ sub write_test_code($)
         # Rewrite the registers periodically. This avoids the tendency
         # for the VFP registers to decay to NaNs and zeroes.
         if ($periodic_reg_random && ($i % 100) == 0) {
+            write_risuop($OP_SETUPBEGIN);
             write_random_register_data($fp_enabled);
+            write_risuop($OP_SETUPEND);
+            write_risuop($OP_COMPARE);
         }
         progress_update($i);
     }
