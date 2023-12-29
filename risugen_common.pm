@@ -26,7 +26,7 @@ BEGIN {
     our @EXPORT = qw(
         irand
         open_bin close_bin
-        set_endian
+        set_endian big_endian
         insn32 insn16 $bytecount
         progress_start progress_update progress_end
         eval_with_fields is_pow_of_2 sextract ctz
@@ -61,6 +61,11 @@ sub irand($)
 sub set_endian
 {
     $bigendian = @_;
+}
+
+sub big_endian
+{
+    return $bigendian;
 }
 
 sub open_bin

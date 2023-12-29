@@ -81,53 +81,46 @@ sub write_mov_ri($$)
     }
 }
 
-sub write_store_64($$)
+sub write_store_32($$)
 {
-    my ($imh, $iml) = @_;
+    my ($im, $imm) = @_;
 
-    # number of bit to shift
-    write_mov_ri16(19, 31);
-    # load the highest 32 bits
-    write_mov_ri32(20, $iml);
-    # shift left 32 bits (sld r20, r20, r19
-    insn32((0x1f << 26) | (20 << 21) | (20 << 16) | (19 << 11) | 0x36);
-    # write the lowest 32bits
-    write_mov_ri32(21, $imh);
-    # or r20, r20, r21
-    insn32((0x1f << 26) | (20 << 21) | (20 << 16) | (21 << 11) | 0x378);
-
-    # std r20, 16(r1)
-    insn32((0x3e << 26) | (20 << 21) | (1 << 16) | 0x10);
+    write_mov_ri(20, $im);
+    # stw r20, $imm+0(r1)
+    insn32((0x24 << 26) | (20 << 21) | (1 << 16) | ($imm & 0xffff));
 }
 
-sub write_store_128($$$$)
+sub write_store_64($$$)
 {
-    my ($imhh, $imh, $iml, $imll) = @_;
+    my ($imh, $iml, $imm) = @_;
 
-    # store the lowest 32 bits
-    write_mov_ri32(20, $imll);
-    # stw r20, 16(r1)
-    insn32((0x24 << 26) | (20 << 21) | (1 << 16) | 0x10);
-    # store the lower 32 bits
-    write_mov_ri32(20, $iml);
-    # stw r20, 20(r1)
-    insn32((0x24 << 26) | (20 << 21) | (1 << 16) | 0x14);
-    # store the higher 32 bits
-    write_mov_ri32(20, $imh);
-    # stw r20, 24(r1)
-    insn32((0x24 << 26) | (20 << 21) | (1 << 16) | 0x18);
-    # store the highest 32 bits
-    write_mov_ri32(20, $imhh);
-    # stw r20, 28(r1)
-    insn32((0x24 << 26) | (20 << 21) | (1 << 16) | 0x1c);
+    if (big_endian()) {
+        write_store_32($imh, $imm + 0);
+        write_store_32($iml, $imm + 4);
+    } else {
+        write_store_32($iml, $imm + 0);
+        write_store_32($imh, $imm + 4);
+    }
+}
 
+sub write_store_128($$$$$)
+{
+    my ($imhh, $imh, $iml, $imll, $imm) = @_;
+
+    if (big_endian()) {
+        write_store_64($imhh, $imh, $imm + 0);
+        write_store_64($iml, $imll, $imm + 8);
+    } else {
+        write_store_64($iml, $imll, $imm + 0);
+        write_store_64($imhh, $imh, $imm + 8);
+    }
 }
 
 sub write_random_ppc64_fpdata()
 {
     for (my $i = 0; $i < 32; $i++) {
         # store a random doubleword value at r1+16
-        write_store_64(irand(0xfffff), irand(0xfffff));
+        write_store_64(irand(0xfffff), irand(0xfffff), 0x10);
         # lfd f$i, 0x10(r1)
         insn32((0x32 << 26) | ($i << 21) | (0x1 << 16) | 0x10);
     }
@@ -137,7 +130,7 @@ sub write_random_ppc64_vrdata()
 {
     for (my $i = 0; $i < 32; $i++) {
         # store a random doubleword value at r1+16
-        write_store_128(irand(0xffff), irand(0xffff), irand(0xfffff), irand(0xfffff));
+        write_store_128(irand(0xffff), irand(0xffff), irand(0xfffff), irand(0xfffff), 0x10);
         # li r0, 16
         write_mov_ri(0, 0x10);
         # lvx vr$i, r1, r0
@@ -149,7 +142,7 @@ sub write_random_regdata()
 {
     # clear condition register
     for (my $i = 0; $i < 32; $i++) {
-        # crxor i, i, i
+        # crxor i, i, i ; crclr i
         insn32((0x13 << 26) | ($i << 21) | ($i << 16) | ($i << 11) | (0xc1 << 1) | 0);
     }
 
@@ -164,18 +157,13 @@ sub write_random_regdata()
 
 sub clear_vr_registers()
 {
-    # addi r22, r1, 32
-    insn32(0x3ac10020);
     # li r23, 0
     write_mov_ri(23, 0);
-    # zero the xer register
-    # mtxer   r23
-    insn32(0x7ee103a6);
-    # std r23, 0(r22)
-    insn32(0xfaf60000);
+    # mtxer r23 ; zero the xer register
+    insn32((31 << 26) | (23 << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1));
 
     for (my $i = 0; $i < 32; $i++) {
-        # vxor i, i, i
+        # vxor vi, vi, vi
         insn32((0x4 << 26) | ($i << 21) | ($i << 16) | ($i << 11) | 0x4c4);
     }
 }
@@ -198,13 +186,18 @@ sub write_random_register_data($)
 
 sub write_memblock_setup()
 {
-    # li r2, 0
-    write_mov_ri(2, 0);
-    for (my $i = 0; $i < 10000; $i = $i + 8) {
-        # std r2, 0(r1)
-        my $imm = -$i;
-        insn32((0x3e << 26) | (2 << 21) | (1 << 16) | ($imm & 0xffff));
-    }
+    # li r2, 20000
+    write_mov_ri(2, 20000);
+    # mtctr r2
+    insn32(0x7c4903a6);
+    # li r3, 0
+    write_mov_ri(3, 0);
+    # addi r2,r1,132
+    insn32(0x38410084);
+    # stwu r3,-4(r2)
+    insn32(0x9462fffc);
+    # bdnz -4
+    insn32(0x4200fffc);
 }
 
 # Functions used in memory blocks to handle addressing modes.
@@ -274,7 +267,7 @@ sub reg_plus_imm($$@)
 
     $imm = -$imm;
     write_add_ri($base, 1, $imm);
- 
+
     # Clear r0 to avoid register compare mismatches
     # when the memory block location differs between machines.
     # write_mov_ri($base, 0);
