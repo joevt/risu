@@ -50,10 +50,11 @@
 #endif
 
 struct reginfo {
-    uint32_t faulting_insn;
-    uint32_t prev_insn;
     uint32_t second_prev_insn;
-    reg_t nip;
+    uint32_t prev_insn;
+    uint32_t faulting_insn;
+    uint32_t next_insn;
+    uint32_t nip;
     gregset_t gregs;
     uint64_t fpregs[32];
     reg_t fpscr;

@@ -146,10 +146,14 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 
     memset(ri, 0, sizeof(*ri));
 
-    ri->faulting_insn = *((uint32_t *) get_uc_pc(uc, siaddr));
-    ri->prev_insn = *((uint32_t *) (get_uc_pc(uc, siaddr) - 4));
-    ri->second_prev_insn = *((uint32_t *) (get_uc_pc(uc, siaddr) - 8));
-    ri->nip = get_uc_pc(uc, siaddr) - image_start_address;
+    uintptr_t pc = get_uc_pc(uc, siaddr);
+    uintptr_t ibegin = image_start_address;
+    uintptr_t iend = image_start_address + image_size;
+    ri->second_prev_insn = (pc - 8) >= ibegin && (pc - 8) < iend ? *((uint32_t *) (pc - 8)) : 0;
+    ri->prev_insn        = (pc - 4) >= ibegin && (pc - 4) < iend ? *((uint32_t *) (pc - 4)) : 0;
+    ri->faulting_insn    = (pc + 0) >= ibegin && (pc + 0) < iend ? *((uint32_t *) (pc + 0)) : 0;
+    ri->next_insn        = (pc + 4) >= ibegin && (pc + 4) < iend ? *((uint32_t *) (pc + 4)) : 0;
+    ri->nip = pc - ibegin;
 
 #ifndef __APPLE__
     for (i = 0; i < NGREG; i++) {
@@ -188,7 +192,7 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
     ri->gregs[29] = uc->uc_mcontext->ss.r29;
     ri->gregs[30] = uc->uc_mcontext->ss.r30;
     ri->gregs[31] = uc->uc_mcontext->ss.r31;
-    ri->gregs[32] = get_uc_pc(uc, siaddr); /* NIP */
+    ri->gregs[32] = pc; /* NIP */
     ri->gregs[33] = uc->uc_mcontext->ss.srr1; /* MSR */
     ri->gregs[34] = 0; /* orig r3 */
     ri->gregs[35] = uc->uc_mcontext->ss.ctr;
@@ -271,14 +275,19 @@ void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr)
 /* reginfo_is_eq: compare the reginfo structs, returns nonzero if equal */
 int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 {
+    uint32_t gregs_mask = ~((1 << (31-1)) | (1 << (31-13))); /* ignore r1 and r13 */
+    if (get_risuop(a) == OP_SIGILL && (a->next_insn & (0xe << 26)) == (0xe << 26)) {
+        gregs_mask &= ~(1 << (31-((a->next_insn >> 21) & 31)));
+    }
+
     int i;
     for (i = 0; i < 32; i++) {
-        if (i == 1 || i == 13) {
-            continue;
-        }
-
         if (m->gregs[i] != a->gregs[i]) {
-            return 0;
+            if ((1 << (31-i)) & ~gregs_mask) {
+                /* a->gregs[i] = m->fpregs[i]; */
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -357,7 +366,8 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
 
     fprintf(f, "2nd prev insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 8, ri->second_prev_insn);
     fprintf(f, "previous insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 4, ri->prev_insn);
-    fprintf(f, "faulting insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip, ri->faulting_insn);
+    fprintf(f, "faulting insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip + 0, ri->faulting_insn);
+    fprintf(f, "    next insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip + 4, ri->next_insn);
     fprintf(f, "\n");
 
     for (i = 0; i < 16; i++) {
