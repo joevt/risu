@@ -41,6 +41,7 @@ typedef void entrypoint_fn(void);
 
 extern uintptr_t image_start_address;
 extern entrypoint_fn *image_start;
+extern size_t image_size;
 void do_image();
 
 /* Ops code under test can request from risu: */
