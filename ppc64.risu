@@ -50,6 +50,8 @@
 #   v2.07    See above.
 #   v3.0     See above.
 #   AltiVec  Instruction supported in all CPUs that support vector instructions.
+#   Optional Instruction not defined in many/all? 32-bit PowerPC CPUs.
+#   PPC64    Instruction only defined for 64-bit PowerPC CPUs.
 
 @P1
 # format:XO book:I page:70 v:P1 SR add Add
@@ -308,11 +310,11 @@ CMPLI PPC64LE 001010 bf:3 0 l:1 ra:5 imm:16 \
 CMPRB PPC64LE 011111 bf:3 0 l:1 ra:5 rb:5 00110000000 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:98 PPC SR cntlzd Count Leading Zeros Dword
 CNTLZD PPC64LE 011111 rs:5 ra:5 0000000001110100 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:X book:I page:98 PPC SR cntlzd. Count Leading Zeros Dword
 CNTLZDd PPC64LE 011111 rs:5 ra:5 0000000001110101 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
@@ -509,19 +511,19 @@ DIEXQ PPC64LE 111111 frtp:5 fra:5 frbp:5 11011000100
 # format:X book:I page:220 v2.05 diexq. DFP Insert Exponent Quad
 DIEXQd PPC64LE 111111 frtp:5 fra:5 frbp:5 11011000101
 
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divd Divide Dword
 DIVD PPC64LE 011111 rt:5 ra:5 rb:5 01111010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divd. Divide Dword
 DIVDd PPC64LE 011111 rt:5 ra:5 rb:5 01111010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divdo Divide Dword
 DIVDo PPC64LE 011111 rt:5 ra:5 rb:5 11111010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divdo. Divide Dword
 DIVDod PPC64LE 011111 rt:5 ra:5 rb:5 11111010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
@@ -560,19 +562,19 @@ DIVDEUo PPC64LE 011111 rt:5 ra:5 rb:5 11100010010 \
 DIVDEUod PPC64LE 011111 rt:5 ra:5 rb:5 11100010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divdu Divide Dword Unsigned
 DIVDU PPC64LE 011111 rt:5 ra:5 rb:5 01110010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divdu. Divide Dword Unsigned
 DIVDUd PPC64LE 011111 rt:5 ra:5 rb:5 01110010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divduo Divide Dword Unsigned
 DIVDUo PPC64LE 011111 rt:5 ra:5 rb:5 11110010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:82 PPC SR divduo. Divide Dword Unsigned
 DIVDUod PPC64LE 011111 rt:5 ra:5 rb:5 11110010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
@@ -866,11 +868,11 @@ EXTSH PPC64LE 011111 rs:5 ra:5 0000011100110100 \
 EXTSHd PPC64LE 011111 rs:5 ra:5 0000011100110101 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:98 PPC SR extsw Extend Sign Word
 EXTSW PPC64LE 011111 rs:5 ra:5 0000011110110100 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:X book:I page:98 PPC SR extsw. Extend Sign Word
 EXTSWd PPC64LE 011111 rs:5 ra:5 0000011110110101 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
@@ -905,10 +907,10 @@ FADDS PPC64LE 111011 frt:5 fra:5 frb:5 00000101010
 # format:A book:I page:153 PPC fadds. Floating Add Single
 FADDSd PPC64LE 111011 frt:5 fra:5 frb:5 00000101010
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:164 PPC fcfid Floating Convert From Integer Dword
 FCFID PPC64LE 111111 frt:5 00000 frb:5 11010011100
-@PPC
+@PPC,PPC64
 # format:X book:I page:164 PPC fcfid Floating Convert From Integer Dword
 FCFIDd PPC64LE 111111 frt:5 00000 frb:5 11010011101
 
@@ -948,10 +950,10 @@ FCPSGN PPC64LE 111111 frt:5 fra:5 frb:5 00000010000
 # format:X book:I page:151 v2.05 fcpsgn Floating Copy Sign
 FCPSGNd PPC64LE 111111 frt:5 fra:5 frb:5 00000010001
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:160 PPC fctid Floating Convert To Integer Dword
 FCTID PPC64LE 111111 frt:5 00000 frb:5 11001011100
-@PPC
+@PPC,PPC64
 # format:X book:I page:160 PPC fctid Floating Convert To Integer Dword
 FCTIDd PPC64LE 111111 frt:5 00000 frb:5 11001011101
 
@@ -969,10 +971,10 @@ FCTIDUZ PPC64LE 111111 frt:5 00000 frb:5 11101011110
 # format:X book:I page:162 v2.06 fctiduz Floating Convert To Integer Dword Unsigned truncate
 FCTIDUZd PPC64LE 111111 frt:5 00000 frb:5 11101011111
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:161 PPC fctidz Floating Convert To Integer Dword truncate
 FCTIDZ PPC64LE 111111 frt:5 00000 frb:5 11001011110
-@PPC
+@PPC,PPC64
 # format:X book:I page:161 PPC fctidz Floating Convert To Integer Dword truncate
 FCTIDZd PPC64LE 111111 frt:5 00000 frb:5 11001011111
 
@@ -1187,17 +1189,17 @@ FSEL PPC64LE 111111 frt:5 fra:5 frb:5 frc:5 101110
 # format:A book:I page:169 PPC fsel Floating Select
 FSELd PPC64LE 111111 frt:5 fra:5 frb:5 frc:5 101111
 
-@P2
+@P2,Optional
 # format:A book:I page:155 v:P2 fsqrt Floating Square Root
 FSQRT PPC64LE 111111 frt:5 00000 frb:5 00000101100
-@P2
+@P2,Optional
 # format:A book:I page:155 v:P2 fsqrt Floating Square Root
 FSQRTd PPC64LE 111111 frt:5 00000 frb:5 00000101101
 
-@PPC
+@PPC,Optional
 # format:A book:I page:155 PPC fsqrts Floating Square Root Single
 FSQRTS PPC64LE 111011 frt:5 00000 frb:5 00000101100
-@PPC
+@PPC,Optional
 # format:A book:I page:155 PPC fsqrts Floating Square Root Single
 FSQRTSd PPC64LE 111011 frt:5 00000 frb:5 00000101101
 
@@ -1252,7 +1254,7 @@ LBZX PPC64LE 011111 rt:5 ra:5 rb:5 00010101110 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:DS book:I page:53 PPC ld Load Dword
 LD PPC64LE 111010 rt:5 ra:5 imm:14 00 \
 !constraints { $rt != 1 && $ra != 1 && $rt != 13 && $ra != 13 && $ra != 0 && $ra != $rt && $imm <= 8176; } \
@@ -1270,19 +1272,19 @@ LDMX PPC64LE 011111 rt:5 ra:5 rb:5 01001101010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:DS book:I page:53 PPC ldu Load Dword with Update
 LDU PPC64LE 111010 rt:5 ra:5 imm:14 01 \
 !constraints { $rt != 1 && $ra != 1 && $rt != 13 && $ra != 13 && $ra != 0 && $ra != $rt && $imm <= 8176; } \
 !memory { reg_plus_imm($ra, $imm << 2); }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:53 PPC ldux Load Dword with Update Indexed
 LDUX PPC64LE 011111 rt:5 ra:5 rb:5 00001101010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:53 PPC ldx Load Dword Indexed
 LDX PPC64LE 011111 rt:5 ra:5 rb:5 00000101010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
@@ -1501,19 +1503,19 @@ LVXL PPC64LE 011111 vrt:5 ra:5 rb:5 01011001110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:DS book:I page:52 PPC lwa Load Word Algebraic
 LWA PPC64LE 111010 rt:5 ra:5 imm:14 10 \
 !constraints { $rt != 1 && $ra != 1 && $rt != 13 && $ra != 13 && $ra != 0 && $imm <= 8176; } \
 !memory { reg_plus_imm($ra, $imm << 2); }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:52 PPC lwaux Load Word Algebraic with Update Indexed
 LWAUX PPC64LE 011111 rt:5 ra:5 rb:5 01011101010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:52 PPC lwax Load Word Algebraic Indexed
 LWAX PPC64LE 011111 rt:5 ra:5 rb:5 01010101010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rt && $ra != $rb && $rt != $rb; } \
@@ -1802,20 +1804,20 @@ MTVSRWS PPC64LE 011111 t:5 ra:5 000000110010011 tx:1 \
 MTVSRWZ PPC64LE 011111 t:5 ra:5 000000011110011 tx:1 \
 !constraints { $ra != 1 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulhd Multiply High Dword
 MULHD PPC64LE 011111 rt:5 ra:5 rb:5 00010010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulhd Multiply High Dword
 MULHDd PPC64LE 011111 rt:5 ra:5 rb:5 00010010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulhdu Multiply High Dword Unsigned
 MULHDU PPC64LE 011111 rt:5 ra:5 rb:5 00000010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulhdu Multiply High Dword Unsigned
 MULHDUd PPC64LE 011111 rt:5 ra:5 rb:5 00000010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
@@ -1838,19 +1840,19 @@ MULHWU PPC64LE 011111 rt:5 ra:5 rb:5 00000010110 \
 MULHWUd PPC64LE 011111 rt:5 ra:5 rb:5 00000010111 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulld Multiply Low Dword
 MULLD PPC64LE 011111 rt:5 ra:5 rb:5 00111010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulld Multiply Low Dword
 MULLDd PPC64LE 011111 rt:5 ra:5 rb:5 00111010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulld Multiply Low Dword
 MULLDo PPC64LE 011111 rt:5 ra:5 rb:5 10111010010 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:XO book:I page:80 PPC SR mulld Multiply Low Dword
 MULLDdo PPC64LE 011111 rt:5 ra:5 rb:5 10111010011 \
 !constraints { $rt != 1 && $ra != 1 && $rb != 1 && $rt != 13 && $ra != 13 && $rb != 13; }
@@ -1965,56 +1967,56 @@ PRTYD PPC64LE 011111 rs:5 ra:5 0000000101110100 \
 PRTYW PPC64LE 011111 rs:5 ra:5 0000000100110100 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:MDS book:I page:103 PPC SR rldcl Rotate Left Dword then Clear Left
 RLDCL PPC64LE 011110 rs:5 ra:5 rb:5 mb:6 10000 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:MDS book:I page:103 PPC SR rldcl Rotate Left Dword then Clear Left
 RLDCLd PPC64LE 011110 rs:5 ra:5 rb:5 mb:6 10001 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:MDS book:I page:103 PPC SR rldcr Rotate Left Dword then Clear Right
 RLDCR PPC64LE 011110 rs:5 ra:5 rb:5 mb:6 10010 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:MDS book:I page:103 PPC SR rldcr Rotate Left Dword then Clear Right
 RLDCRd PPC64LE 011110 rs:5 ra:5 rb:5 mb:6 10011 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:MD book:I page:104 PPC SR rldic Rotate Left Dword Immediate then Clear
 RLDIC PPC64LE 011110 rs:5 ra:5 sh:5 mb:6 010 sha:1 0 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:MD book:I page:104 PPC SR rldic Rotate Left Dword Immediate then Clear
 RLDICd PPC64LE 011110 rs:5 ra:5 sh:5 mb:6 010 sha:1 1 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:MD book:I page:104 PPC SR rldicl Rotate Left Dword Immediate then Clear Left
 RLDICL PPC64LE 011110 rs:5 ra:5 sh:5 mb:6 000 sha:1 0 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:MD book:I page:104 PPC SR rldicl Rotate Left Dword Immediate then Clear Left
 RLDICLd PPC64LE 011110 rs:5 ra:5 sh:5 mb:6 000 sha:1 1 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:MD book:I page:105 PPC SR rldicr[.] Rotate Left Dword Immediate then Clear Right
 RLDICR PPC64LE 011110 rs:5 ra:5 sh:5 me:6 001 sha:1 0 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:MD book:I page:105 PPC SR rldicr[.] Rotate Left Dword Immediate then Clear Right
 RLDICRd PPC64LE 011110 rs:5 ra:5 sh:5 me:6 001 sha:1 1 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:MD book:I page:105 PPC SR rldimi[.] Rotate Left Dword Immediate then Mask Insert
 RLDIMI PPC64LE 011110 rs:5 ra:5 sh:5 me:6 011 sha:1 0 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:MD book:I page:105 PPC SR rldimi[.] Rotate Left Dword Immediate then Mask Insert
 RLDIMId PPC64LE 011110 rs:5 ra:5 sh:5 me:6 011 sha:1 1 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
@@ -2059,11 +2061,11 @@ RLWNMd PPC64LE 010111 rs:5 ra:5 rb:5 mb:5 me:5 1 \
 SETB PPC64LE 011111 rt:5 bfa:3 000000000100000000 \
 !constraints { $rt != 1 && $rt != 13; }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:108 PPC SR sld[.] Shift Left Dword
 SLD PPC64LE 011111 rs:5 ra:5 rb:5 00000110110 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:X book:I page:108 PPC SR sld[.] Shift Left Dword
 SLDd PPC64LE 011111 rs:5 ra:5 rb:5 00000110111 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
@@ -2077,20 +2079,20 @@ SLW PPC64LE 011111 rs:5 ra:5 rb:5 00000110000 \
 SLWd PPC64LE 011111 rs:5 ra:5 rb:5 00000110001 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:109 PPC SR srad[.] Shift Right Algebraic Dword
 SRAD PPC64LE 011111 rs:5 ra:5 rb:5 11000110100 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:X book:I page:109 PPC SR srad[.] Shift Right Algebraic Dword
 SRADd PPC64LE 011111 rs:5 ra:5 rb:5 11000110101 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:XS book:I page:109 PPC SR sradi[.] Shift Right Algebraic Dword Immediate
 SRADI PPC64LE 011111 rs:5 ra:5 sh:5 110011101 sha:1 0 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
-@PPC
+@PPC,PPC64
 # format:XS book:I page:109 PPC SR sradi[.] Shift Right Algebraic Dword Immediate
 SRADId PPC64LE 011111 rs:5 ra:5 sh:5 110011101 sha:1 1 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
@@ -2113,11 +2115,11 @@ SRAWI PPC64LE 011111 rs:5 ra:5 sh:5 11001110000 \
 SRAWId PPC64LE 011111 rs:5 ra:5 sh:5 11001110001 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13; }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:108 PPC SR srd[.] Shift Right Dword
 SRD PPC64LE 011111 rs:5 ra:5 rb:5 10000110110 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
-@PPC
+@PPC,PPC64
 # format:X book:I page:108 PPC SR srd[.] Shift Right Dword
 SRDd PPC64LE 011111 rs:5 ra:5 rb:5 10000110111 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13; }
@@ -2155,7 +2157,7 @@ STBX PPC64LE 011111 rs:5 ra:5 rb:5 00110101110 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rs && $ra != $rb && $rs != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:DS book:I page:58 PPC std Store Dword
 STD PPC64LE 111110 rs:5 ra:5 imm:14 00 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13 && $ra != 0 && $rs != $ra && $imm <= 8176; } \
@@ -2167,19 +2169,19 @@ STDBRX PPC64LE 011111 rs:5 ra:5 rb:5 10100101000 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rs && $ra != $rb && $rs != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:DS book:I page:58 PPC stdu Store Dword with Update
 STDU PPC64LE 111110 rs:5 ra:5 imm:14 01 \
 !constraints { $rs != 1 && $ra != 1 && $rs != 13 && $ra != 13 && $ra != 0 && $rs != $ra && $imm <= 8176; } \
 !memory { reg_plus_imm($ra, $imm << 2); }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:58 PPC stdux Store Dword with Update Indexed
 STDUX PPC64LE 011111 rs:5 ra:5 rb:5 00101101010 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rs && $ra != $rb && $rs != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:58 PPC stdx Store Dword Indexed
 STDX PPC64LE 011111 rs:5 ra:5 rb:5 00100101010 \
 !constraints { $rs != 1 && $ra != 1 && $rb != 1 && $rs != 13 && $ra != 13 && $rb != 13 && $ra != 0 && $ra != $rs && $ra != $rb && $rs != $rb; } \
@@ -2558,12 +2560,12 @@ SUBFZEdo PPC64LE 011111 rt:5 ra:5 0000010110010001 \
 
 # TRAP instructions *******************************************************************
 
-@PPC
+@PPC,PPC64
 # format:X book:I page:90 PPC td Trap Dword
 #TD PPC64LE 011111 to:5 ra:5 rb:5 00010001000 \
 #!constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13; }
 
-@PPC
+@PPC,PPC64
 # format:D book:I page:90 PPC tdi Trap Dword Immediate
 #TDI PPC64LE 000010 to:5 ra:5 imm:16 \
 #!constraints { $ra != 1 && $ra != 13; }
