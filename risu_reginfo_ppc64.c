@@ -69,6 +69,10 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
     ri->vrregs.vscr = uc->uc_mcontext.v_regs->vscr;
     ri->vrregs.vrsave = uc->uc_mcontext.v_regs->vrsave;
 #endif
+
+#ifdef SAVESTACK
+    memcpy(ri->stack, (uint8_t*)ri->gregs[1] - (sizeof(ri->stack) / 2), sizeof(ri->stack));
+#endif
 }
 
 /* reginfo_update: update the context */

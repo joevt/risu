@@ -24,6 +24,9 @@ struct reginfo {
 #ifdef VRREGS
     vrregset_t vrregs;
 #endif
+#ifdef SAVESTACK
+    uint8_t stack[256];
+#endif
 };
 
 #endif /* RISU_REGINFO_PPC64_H */
