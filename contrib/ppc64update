@@ -1,0 +1,805 @@
+#!/usr/bin/perl -w
+###############################################################################
+# Copyright (c) 2010 Linaro Limited
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#     Peter Maydell (Linaro) - initial implementation
+#     Claudio Fontana (Linaro) - initial aarch64 support
+#     Jose Ricardo Ziviani (IBM) - initial ppc64 support and arch isolation
+###############################################################################
+
+# ppc64update -- based on risugen; merges Power ISA 3.1B table into ppc64.risu.
+
+use strict;
+use Getopt::Long;
+use Data::Dumper;
+use Module::Load;
+use List::MoreUtils qw(first_index indexes);
+use Text::Balanced qw { extract_bracketed extract_multiple };
+# Make sure we can find the per-CPU-architecture modules in the
+# same directory as this script.
+use FindBin;
+use lib "$FindBin::Bin";
+
+# insn_details is the full set of instruction definitions whereas
+# insn_keys is array of (potentially filtered) keys to index into the
+# insn_details hash.
+my %insn_details;
+my @insn_keys;
+my @insn_details1;
+my @isa_details;
+my @isa_details2;
+
+# The arch will be selected based on .mode directive defined in risu file.
+my $arch = "";
+# Current groups, updated by @GroupName
+my @insn_groups;
+
+my $groups = "";                # include groups
+my @pattern_re = ();            # include pattern
+my @not_pattern_re = ();        # exclude pattern
+
+# Valid block names (keys in blocks hash)
+my %valid_blockname = ( constraints => 1, memory => 1, post =>1 );
+
+sub parse_risu_directive($$@)
+{
+    # Parse a line beginning with ".", which is a directive used
+    # to affect how risu/risugen should behave rather than an insn pattern.
+
+    # At the moment we only support one directive:
+    #  .mode modename
+    # where modename can be "arm" or "thumb"
+    my ($file, $seen_pattern, $dirname, @rest) = @_;
+    if ($dirname eq ".mode") {
+        if ($seen_pattern != 0) {
+            print STDERR "$file:$.: .mode directive must precede all instruction patterns\n";
+            exit(1);
+        }
+        if ($#rest != 0) {
+            print STDERR "$file:$.: wrong number of arguments to .mode\n";
+            exit(1);
+        }
+        $arch = $rest[0];
+    } else {
+        print STDERR "$file:$.: unknown directive $dirname\n";
+        exit(1);
+    }
+}
+
+my $thelines;
+my $grouplines;
+
+sub read_tokenised_line(*)
+{
+    # Read a tokenised line from the config file.
+    # For our purposes, tokens are generally whitespace
+    # separated, but any token beginning with a '{'
+    # continues until we have encountered the matching '}'
+    # (including counting in and out any nested {} within it).
+    # This is also where we deal with blank lines, comments
+    # and line continuation characters.
+    # Any mismatched braces will manifest as a single '{'
+    # or '}' token in the output.
+    my ($fh) = @_;
+    my $line = '';
+    while (<$fh>) {
+        $thelines .= $_;
+        chomp;
+        $line .= $_;
+        next if $line =~ s/\\$//;
+        $line =~ s/#.*$//;
+        next if $line =~ /^\s*$/;
+        last;
+    }
+    #print "got final line:\n";
+    #print "$line\n";
+
+    my (@tokens) = extract_multiple($line,
+                                    [ sub { extract_bracketed($_[0],'{}') },
+                                      qr/([^{} ]+)/,
+                                      qr/([{}]+)/,
+                                    ], undef, 1);
+
+    #print "Tokenised as:\n";
+    #print Dumper(@tokens), "\n";
+    return @tokens;
+}
+
+sub parse_config_file($)
+{
+    # Read in the config file defining the instructions we can generate
+    my ($file) = @_;
+    # See the README for details of the format we are parsing here.
+
+    # Our data structure here is fairly simple:
+    # an assoc array %insn_details whose keys are "insn_enc" strings
+    # and whose values are array references. Each array is, in order:
+    # insnwidth, fixedbits, fixedbitmask, constraint, var,bitpos,mask , var,bitpos,mask ...
+
+    my ($seen_pattern) = 0;
+    my @tokens;
+    open(CFILE, $file) or die "can't open $file: $!";
+    while (@tokens = read_tokenised_line(CFILE))
+    {
+        if (grep {/^[\{\}]$/} @tokens) {
+            print STDERR "$file:$.: mismatched braces\n";
+            exit(1);
+        }
+
+        if ($tokens[0] =~ /^@.*/ ) {
+            my $line = join(' ', @tokens);
+            $line =~ s/^@\s*|\s+$//g;
+            @insn_groups = split(/\s*,\s*/, $line);
+            $grouplines = $thelines =~ s/^@.*\n//mr;
+            $thelines = '';
+            next;
+        }
+
+        if ($tokens[0] =~ /^\./) {
+            parse_risu_directive($file, $seen_pattern, @tokens);
+            next;
+        }
+        $seen_pattern = 1;
+
+        my $insnrec = {};
+        my @fields = ();
+
+        my ($insn, $enc, @bits) = @tokens;
+        if (!defined $enc) {
+            print STDERR "$file:$.: no insn or encoding?\n";
+            exit(1);
+        }
+        if ($insn !~ /^[A-Za-z0-9][A-Za-z0-9_]*$/) {
+            print STDERR "$file:$.: invalid insn name $insn ";
+            print STDERR "(possibly missing line continuation character?)\n";
+            exit(1);
+        }
+        if ($enc !~ /^[A-Za-z0-9][A-Za-z0-9_]*$/) {
+            print STDERR "$file:$.: invalid encoding name $enc\n";
+            exit(1);
+        }
+        my $insnname = "${insn} ${enc}";
+        if (exists $insn_details{$insnname}) {
+            print STDERR "$file:$.: redefinition of $insnname\n";
+            exit(1);
+        }
+
+        my $fixedbits = 0;
+        my $fixedbitmask = 0;
+        my $insnwidth = 0;
+        my $seenblock = 0;
+
+        while (@bits) {
+            my $bit = shift @bits;
+            my $bitlen;
+            my $bitval;
+            my $var;
+
+            if ($bit =~ /^\!/) {
+                # A named block
+                my $blockname = $bit;
+                $blockname =~ s/^!//;
+                my $block = shift @bits;
+                if (!defined $block || $block !~ /^{/) {
+                    print STDERR "$file:$.: expected block following '!$blockname'\n";
+                    exit(1);
+                }
+                if (!$valid_blockname{$blockname}) {
+                    print STDERR "$file:$.: unknown block name '$blockname'\n";
+                    exit(1);
+                }
+                $insnrec->{blocks}{$blockname} = $block;
+                $seenblock++;
+                next;
+            } elsif ($bit =~ /^{/) {
+                # An unnamed block is constraints, for backcompatibility
+                $insnrec->{blocks}{"constraints"} = $bit;
+                $seenblock++;
+                next;
+            } elsif ($bit =~ /^[01]*$/) {
+                # fixed bits
+                $bitlen = length($bit);
+                if ($bitlen > 32) {
+                    $bitval = (oct("0b" . substr($bit,0, $bitlen - 32)) << 32) | oct("0b0" . substr($bit,$bitlen - 32,32));
+                } else {
+                    $bitval = oct("0b".$bit);
+                }
+            } elsif ($bit =~ /^([a-zA-Z][a-zA-Z0-9]*):([0-9]+)$/) {
+                # variable field
+                $var = $1;
+                $bitlen = $2;
+            } elsif($bit =~ /^([a-zA-Z][a-zA-Z0-9]*)$/) {
+                # single bit variable field
+                $var = $1;
+                $bitlen = 1;
+            } else {
+                print STDERR "$file:$.: ($insn $enc) unrecognised bitfield specifier $bit\n";
+                exit(1);
+            }
+
+            if ($seenblock) {
+                print STDERR "$file:$.: blocks may not occur in the middle of a pattern\n";
+                exit(1);
+            }
+
+            my $bitmask;
+            if ($bitlen > 32) {
+                $bitmask = (oct("0b" . '1' x ($bitlen - 32)) << 32) | oct("0b0" . '1' x 32);
+            } else {
+                $bitmask = oct("0b". '1' x $bitlen);
+            }
+
+            $insnwidth += $bitlen;
+            if ($insnwidth > 64) {
+                print STDERR "$file:$.: ($insn $enc) too many bits specified\n";
+                exit(1);
+            }
+
+            $fixedbits <<= $bitlen;
+            $fixedbitmask <<= $bitlen;
+
+            if (defined $bitval) {
+                $fixedbits |= $bitval;
+                $fixedbitmask |= $bitmask;
+            } else {
+                push @fields, [ $var, 32 - $insnwidth, $bitmask ];
+            }
+        }
+        if ($insnwidth == 16) {
+            # assume this is a half-width thumb instruction
+            # Note that we don't fiddle with the bitmasks or positions,
+            # which means the generated insn will be in the high halfword!
+            $fixedbits <<= 16;
+            $fixedbitmask <<= 16;
+        } elsif ($insnwidth < 32) {
+            print STDERR "$file:$.: ($insn $enc) not enough bits specified\n";
+            exit(1);
+        } elsif ($insnwidth & 7) {
+            print STDERR "$file:$.: ($insn $enc) not enough bits to make the last byte\n";
+            exit(1);
+        }
+        if ((($fixedbits & $fixedbitmask) != $fixedbits)
+            || (($fixedbits & ~$fixedbitmask) != 0)) {
+            die "internal error: fixed bits not lined up with mask";
+        }
+        #  Stick the fixedbit info on the front of the array now we know it
+        $insnrec->{name} = $insnname;
+        $insnrec->{width} = $insnwidth;
+        $insnrec->{fixedbits} = $fixedbits;
+        $insnrec->{fixedbitmask} = $fixedbitmask;
+        $insnrec->{fields} = [ @fields ];
+        if (@insn_groups) {
+            $insnrec->{groups} = [ @insn_groups ];
+        }
+        $insnrec->{grouplines} = $grouplines;
+        $insnrec->{thelines} = $thelines;
+        $insn_details{$insnname} = $insnrec;
+        push @insn_details1, $insnrec;
+
+        $grouplines = '';
+        $thelines = '';
+    }
+    close(CFILE) or die "can't close $file: $!";
+}
+
+sub convert_page_to_section($) {
+    my ($page) = @_;
+    if (0) { }
+    # Book I
+    elsif (   33 <= $page and $page <   49 ){ "Branch" }
+    elsif (   49 <= $page and $page <  135 ){ "Fixed-Point" }
+    elsif (  135 <= $page and $page <  191 ){ "Floating-Point" }
+    elsif (  191 <= $page and $page <  247 ){ "Decimal_Floating-Point" }
+    elsif (  247 <= $page and $page <  503 ){ "Vector" }
+    elsif (  503 <= $page and $page < 1005 ){ "Vector-Scalar_Extension" }
+    # Book II
+    elsif ( 1059 <= $page and $page < 1103 ){ "Storage_Control" }
+    elsif ( 1103 <= $page and $page < 1107 ){ "Time_Base" }
+    elsif ( 1107 <= $page and $page < 1115 ){ "Branch_History_Rolling_Buffer" }
+    # Book III
+    elsif ( 1153 <= $page and $page < 1169 ){ "Branch" }
+    elsif ( 1169 <= $page and $page < 1189 ){ "Fixed-Point" }
+    elsif ( 1189 <= $page and $page < 1261 ){ "Storage_Control" }
+    elsif ( 1261 <= $page and $page < 1311 ){ "Interrupts" }
+    elsif ( 1311 <= $page and $page < 1317 ){ "Timer" }
+    elsif ( 1317 <= $page and $page < 1321 ){ "Dynamic_Execution_Control" }
+    elsif ( 1321 <= $page and $page < 1325 ){ "Debug" }
+    elsif ( 1325 <= $page and $page < 1345 ){ "Performance_Monitor" }
+    elsif ( 1345 <= $page and $page < 1353 ){ "Processor_Control" }
+    else {
+        "";
+    }
+}
+
+
+sub changebit
+{
+    my ($p, $mod, $val) = @_;
+
+    my $instruction = $p->{instruction};
+
+    if ($mod eq "d"){
+        if ($instruction =~ /(.*)\brc:1\b(.*)/) {
+            $p->{instruction} = $1 . $val . $2;
+        }
+        else {
+            printf STDERR ("error with . %s %s %s\n", $p->{format}, $p->{mnemonic}, $instruction);
+        }
+    }
+    elsif ($mod eq "o") {
+        if ($instruction =~ /(.*)\boe:1\b(.*)/) {
+            $p->{instruction} = $1 . $val . $2;
+        }
+        elsif ($instruction =~ /(.*)\bro:1\b(.*)/) {
+            $p->{instruction} = $1 . $val . $2;
+        }
+        else {
+            printf STDERR ("error with o %s %s %s\n", $p->{format}, $p->{mnemonic}, $instruction);
+        }
+    }
+    elsif ($mod eq "a") {
+        if ($instruction =~ /(.*)\baa:1\b(.*)/) {
+            $p->{instruction} = $1 . $val . $2;
+        }
+        else {
+            printf STDERR ("error with a %s %s %s\n", $p->{format}, $p->{mnemonic}, $instruction);
+        }
+    }
+    elsif ($mod eq "l") {
+        if ($instruction =~ /(.*)\blk:1\b(.*)/) {
+            $p->{instruction} = $1 . $val . $2;
+        }
+        else {
+            printf STDERR ("error with l %s %s %s\n", $p->{format}, $p->{mnemonic}, $instruction);
+        }
+    }
+    elsif ($mod eq "x") {
+        if ($instruction =~ /(.*)\bex:1\b(.*)/) {
+            $p->{instruction} = $1 . $val . $2;
+        }
+        else {
+            printf STDERR ("error with x %s %s %s\n", $p->{format}, $p->{mnemonic}, $instruction);
+        }
+    }
+    else {
+        printf STDERR ("error with unknown modifier %s %s %s %s\n", $mod, $p->{format}, $p->{mnemonic}, $instruction);
+    }
+
+    $p->{instruction} =~ s/((?:^| )[01]+) ([01]+)\b/$1$2/g;
+    $p->{instruction} =~ s/((?:^| )[01]+) ([01]+)\b/$1$2/g;
+}
+
+sub do_one
+{
+    #printf("[\n");
+    my ($p, $mnemonic) = @_;
+    if ($mnemonic =~ /([^[]*)\[(.)\](.*)/) {
+        my $base = $1;
+        my $mod = $2;
+        my $post = $3;
+
+        my $instruction = $p->{instruction};
+
+        changebit($p, $mod, 0);
+        do_one($p, $base . $post);
+        $p->{instruction} = $instruction;
+
+        changebit($p, $mod, 1);
+        do_one($p, $base . $mod . $post);
+        $p->{instruction} = $instruction;
+    }
+    else {
+        my $copy = { %$p };
+        update_bits($copy);
+        $copy->{Mnemonic} = $mnemonic;
+        push @isa_details2, $copy;
+    }
+}
+
+sub update_instruction ($)
+{
+    my ($p) = @_;
+    my $Format = $p->{format};
+    my $Instruction = $p->{instruction};
+    my $Mnemonic = $p->{mnemonic};
+
+    if ($Format =~ /^(VC|XX3)$/ || ($Format eq "VX" && $Mnemonic =~ /^vstri..\[.\]$/) ) {
+        if ($Instruction =~ /(.{21})\.(.{10})/) {
+            $Instruction = $1 . "d" . $2;
+        }
+    }
+    elsif ($Format =~ /^(A|M|MD|MDS|X|XFL|XO|XS|Z22|Z23)$/) {
+        if ($Instruction =~ /(.{31})\./) {
+            my $first31 = $1;
+            if ($Mnemonic eq "xsrqpi[x]") {
+                $Instruction = $first31 . "x";
+            }
+            elsif ($Mnemonic =~ /^xs\w+p\[o\]$/) {
+                $Instruction = $first31 . "n";
+            }
+            else {
+                $Instruction = $first31 . "d";
+            }
+        }
+    }
+
+    if ($Format eq "XO" && $p->{overflowadded}) {
+        if ($Instruction =~ /(.{21})0(.{10})/) {
+            $Instruction = $1 . "o" . $2;
+        }
+        else {
+            printf STDERR ("error with format XO on line %s\n", $Instruction);
+        }
+    }
+
+    if ($Format =~ /^(B|I|XL)$/) {
+        if ($Instruction =~ /(.{31})\./) {
+            $Instruction = $1 . "l";
+        }
+    }
+
+    if ($Format =~ /^(B|I)$/) {
+        if ($Instruction =~ /(.{30})\.(.)/) {
+            $Instruction = $1 . "a" . $2;
+        }
+        else {
+            printf STDERR ("error with format B|I|XL on line %s\n", $Instruction);
+        }
+    }
+
+    $Instruction =~ s|/|0|g;
+    $Instruction =~ s|\?|.|g;
+
+    # Be careful here. Don't make a substitution that will be modified by another substitution.
+    $Instruction =~ s/a/ aa:1 /;
+    $Instruction =~ s/l/ lk:1 /;
+    $Instruction =~ s/o/ oe:1 /; # For example, this one adds "oe" and neither of those letters is replaced later.
+    $Instruction =~ s/d/ rc:1 /;
+    $Instruction =~ s/x/ ex:1 /;
+    $Instruction =~ s/n/ ro:1 /;
+
+    my $part = chr(ord('a') - 1);
+    $Instruction =~ s|(\.+)|$part = chr(ord($part) + 1); " " . $part . ":" . (length $1) . " ";|eg;
+    $Instruction =~ s/^\s*|\s+$//g;
+    $Instruction =~ s/  +/ /g;
+    $p->{instruction} = $Instruction;
+}
+
+sub update_bits ($)
+{
+    my ($p) = @_;
+    my $Instructionbits = $p->{instruction};
+
+    $Instructionbits =~ s|/|0|g;
+    $Instructionbits =~ s|\?|.|g;
+    $Instructionbits =~ s|\w+:(\d+)|'.' x $1|eg;
+    $Instructionbits =~ s| ||g;
+
+    my $fixedbitsstr = $Instructionbits =~ s/\./0/gr;
+    my $fixedbitmaskstr = $Instructionbits =~ s/[01]/1/gr =~ s/\./0/gr;
+
+    my $fixedbits;
+    my $fixedbitmask;
+
+    my $insnwidth = length $Instructionbits;
+    if ($insnwidth == 64) {
+        $fixedbits = (oct("0b" . substr($fixedbitsstr,0,32)) << 32) | oct("0b0" . substr($fixedbitsstr,32,32));
+        $fixedbitmask = (oct("0b" . substr($fixedbitmaskstr,0,32)) << 32) | oct("0b0" . substr($fixedbitmaskstr,32,32));
+    }
+    elsif ($insnwidth == 32) {
+        $fixedbits = oct("0b0" . $fixedbitsstr);
+        $fixedbitmask = oct("0b0" . $fixedbitmaskstr);
+    }
+    else {
+        printf STDERR ("error with width for instruction %s\n", $Instructionbits);
+    }
+
+    $p->{fixedbits} = $fixedbits;
+    $p->{fixedbitmask} = $fixedbitmask;
+}
+
+sub add_group($)
+{
+    my ($g) = @_;
+    if ($g =~ /^[^_A-Za-z]/) {
+        $g = '_' . $g;
+    }
+    push @insn_groups, $g;
+}
+
+sub parse_isa_file($)
+{
+    my ($Order, $Instruction, $Book, $Compliancy_Subsets, $Linux_Optional_Category, $Always_Optional_Category,
+        $Mnemonic, $Version, $Privilege, $Mode_Dep, $Page, $Page2, $Name);
+    my ($file) = @_;
+    my $line;
+    my $num_skipped = 0;
+    my $num_added = 0;
+    open(CFILE, $file) or die "can't open $file: $!";
+    while (<CFILE>)
+    {
+        if (/^([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)$/) {
+            $Instruction = $1;
+            $Book = $2;
+            $Compliancy_Subsets = $3;
+            $Linux_Optional_Category = $4;
+            $Always_Optional_Category = $5;
+            $Mnemonic = $6;
+            $Version = $7;
+            $Privilege = $8;
+            $Mode_Dep = $9;
+            $Page = $10;
+            $Page2 = $11;
+            $Name = $12;
+
+            my $Section = "";
+            my $Section2 = "";
+
+            my $insnrec = {};
+            @insn_groups = ();
+
+            my $Format;
+            if ($Name =~ /^(.*?) +([^\s]*?)-?form$/) {
+                $Name = $1;
+                $Format = $2;
+                add_group("format:" . $Format);
+            }
+            else {
+                printf STDERR ("error with Format on line %s\n", $_);
+            }
+
+            if ($Page =~ /^\d+$/) {
+            }
+            else {
+                printf STDERR ("error with Page on line %s\n", $_);
+            }
+
+            if ($Page2 =~ /^(\d+)?$/) {
+            }
+            else {
+                printf STDERR ("error with Page on line %s\n", $_);
+            }
+
+            if ($Book =~ /^(\w+)(?: (\w+))?$/) {
+                my $Book1 = $1;
+                my $Book2 = $2;
+                add_group("book:" . $Book1);
+                add_group("page:" . $Page);
+
+                $Section = convert_page_to_section($Page);
+                if (length $Section) {
+                    add_group($Section);
+                } else {
+                    printf STDERR ("error with Section on line %s\n", $_);
+                }
+
+                if (length $Book2) {
+                    add_group("book:" . $Book2);
+                    if ($Page2 =~ /^\d+$/) {
+                        add_group("page:" . $Page2);
+                        $Section2 = convert_page_to_section($Page);
+                        if (length $Section2) {
+                            add_group($Section2);
+                        } else {
+                            printf STDERR ("error with Section on line %s\n", $_);
+                        }
+                    }
+                    else {
+                        printf STDERR ("error with Page2 on line %s\n", $_);
+                    }
+                }
+            }
+            else {
+                printf STDERR ("error with Book on line %s\n", $_);
+            }
+
+            if (length $Version) {
+                add_group($Version);
+            }
+            else {
+                printf STDERR ("error with Version on line %s\n", $_);
+            }
+
+            # don't include this because it differs between addc and addco for example
+            if (length $Compliancy_Subsets) {
+                # add_group($Compliancy_Subsets);            # DON'T ADD ME
+            }
+            else {
+                printf STDERR ("error with Compliancy_Subsets on line %s\n", $_);
+            }
+
+            if (length $Linux_Optional_Category) {
+                add_group($Linux_Optional_Category);
+            }
+
+            if (length $Always_Optional_Category && ($Always_Optional_Category ne $Linux_Optional_Category)) {
+                add_group($Always_Optional_Category);
+            }
+
+            if (length $Privilege) {
+                if ($Privilege =~ m|^(.+)/(.+)$|) {
+                    add_group($1);
+                    add_group($2);
+                }
+                else {
+                    add_group($Privilege);
+                }
+            }
+
+            if (length $Mode_Dep) {
+                add_group($Mode_Dep);
+            }
+
+            $Instruction =~ s| ||g;
+            my $insnwidth = length($Instruction);
+
+            $insnrec->{instruction} = $Instruction;
+            $insnrec->{width} = $insnwidth;
+            $insnrec->{overflowadded} = 0;
+            $insnrec->{mnemonic} = $Mnemonic;
+            $insnrec->{description} = $Name;
+            $insnrec->{groups} = [ @insn_groups ];
+            $insnrec->{format} = $Format;
+            update_bits($insnrec);
+
+            my $fixedbits = $insnrec->{fixedbits};
+            my $fixedbitmask = $insnrec->{fixedbitmask};
+            #printf("%2d %0*x %0*x = %s\n", $insnwidth, ($insnwidth + 3) >> 2, $fixedbitmask, ($insnwidth + 3) >> 2, $fixedbits);
+
+            if ($Name =~ /record OV/) {
+                if ($Mnemonic !~ /o\b/ || $Format ne "XO") {
+                    printf STDERR ("error with OV on line %s\n", $_);
+                }
+                my $OldMnemonic = $Mnemonic =~ s/o\b//r;
+                my @matching_indices = indexes { $OldMnemonic eq $_->{mnemonic} } @isa_details;
+                if (@matching_indices == 1) {
+                    my $p = @isa_details[$matching_indices[0]];
+                    if (
+                        ($insnwidth != $p->{width}) ||
+                        ($fixedbits != $p->{fixedbits} + (1<<10)) ||
+                        ($fixedbitmask != $p->{fixedbitmask}) ||
+                        (($p->{description} . " & record OV") ne $Name ) ||
+                        ($p->{instruction} ne ($Instruction =~ s/1(.{10})$/0$1/r)) ||
+                        (join(',', @{$p->{groups}}) ne join(',', @insn_groups))
+                    ) {
+                        printf STDERR ("error not matching @ %s # %s %s\n %s\n\n", join(', ', @insn_groups), $OldMnemonic, $Name, ($Instruction =~ s/1(.{10})$/0$1/r));
+                        printf STDERR ("                   @ %s # %s %s\n %s\n\n", join(', ', @{$p->{groups}}), $p->{mnemonic}, $p->{description} . " & record OV", $p->{instruction});
+                        #print Dumper($p), "\n";
+                        #print Dumper(\@insn_groups), "\n";
+                        #print Dumper(@insn_groups), "\n";
+                        #print Dumper(\(1,2,3)), "\n";
+                        #print Dumper(\[1,2,3]), "\n";
+                    }
+                    else {
+                        #printf ("fixme @ %s # %s %s\n %s\n\n", join(', ', @insn_groups), $Mnemonic, $Name, $Instruction);
+                        $p->{mnemonic} = $Mnemonic =~ s/o\b/[o]/r;
+                        $p->{overflowadded} = 1;
+                        #print Dumper($p), "\n";
+                        $num_skipped += 1;
+                        next;
+                    }
+                }
+                else {
+                    printf STDERR ("error: not found or too many @ %s # %s %s\n %s\n\n", join(', ', @insn_groups), $Mnemonic, $Name, $Instruction);
+                }
+            }
+
+            push @isa_details, $insnrec;
+            $num_added += 1;
+        }
+        else {
+            printf STDERR ("error on line %s\n", $_);
+        }
+    }
+    close(CFILE) or die "can't close $file: $!";
+
+    foreach (@isa_details) {
+        update_instruction($_);
+
+        my $mnemonic = $_->{mnemonic} =~ s/\./d/r;
+        if ($mnemonic =~ /([^[]*)(.*)/) {
+            $mnemonic = uc($1) . $2;
+        }
+        do_one($_, $mnemonic);
+    }
+
+    foreach (@insn_details1) {
+        my $q = $_;
+        my @matching_indices = indexes { $q->{fixedbits} == $_->{fixedbits} && $q->{fixedbitmask} == $_->{fixedbitmask} } @isa_details2;
+        if (@matching_indices == 1) {
+            my $p = @isa_details2[$matching_indices[0]];
+            if (defined $p->{insn_details}) {
+                printf STDERR ("error: risu duplicate @ %s\n%08x %08x %s\n", join(', ', @{$q->{groups}}), $q->{fixedbitmask}, $q->{fixedbits}, $q->{name});
+            }
+            $p->{insn_details} = $q;
+        }
+        else {
+            printf STDERR ("error: not found or too many @ %s\n%08x %08x %s\n", join(', ', @{$q->{groups}}), $q->{fixedbitmask}, $q->{fixedbits}, $q->{name});
+        }
+    }
+
+    if (0) {
+        printf("# num_skipped = %d\n", $num_skipped);
+        printf("# num_added = %d\n", $num_added);
+        printf("# num_total = %d\n", $num_added + $num_skipped);
+        printf("# num_details1 = %d\n", scalar(@insn_details1));
+        printf("# num_details2 = %d\n", scalar(@isa_details2));
+        printf("\n");
+    }
+
+    my $groups = "";
+    foreach (@isa_details2) {
+        my $dst = $_->{groups};
+        if (defined $_->{insn_details}) {
+            my $src = $_->{insn_details}->{groups};
+            foreach my $g ( "AltiVec", "Optional", "PPC64", "Skip") {
+                if ( grep( /^$g$/, @$src ) && ! grep ( /^$g$/, @$dst )  ) {
+                    #print "adding $g";
+                    push @$dst, $g;
+                }
+            }
+        }
+        else {
+            if ( ! grep ( /^Skip$/, @$dst )  ) {
+                #print "adding Skip for undefined";
+                push @$dst, "Skip";
+            }
+        }
+        my $newgroups = sprintf("@ %s, %s # %s\n", join(', ', @{$_->{groups}}), $_->{mnemonic}, $_->{description});
+        if ($newgroups ne $groups) {
+            $groups = $newgroups;
+            if (defined $_->{insn_details}) {
+                printf("%s", $_->{insn_details}->{grouplines});
+            }
+            else {
+                printf("\n");
+            }
+            printf("%s", $groups);
+        }
+
+        if (defined $_->{insn_details}) {
+            #printf("%s PPC64LE %s\n", $_->{Mnemonic}, $_->{instruction});
+            printf("%s", $_->{insn_details}->{thelines});
+        }
+        else {
+            printf("%s PPC64LE %s\n", $_->{Mnemonic}, $_->{instruction});
+        }
+    }
+}
+
+sub usage()
+{
+    print <<EOT;
+Usage: ppc64update "ppc64.risu"  "Power ISA 3.1B.txt" > "ppc64_new.risu" 2>&1
+
+where "ppc64.risu" is the existing file in the risu directory and
+"Power ISA 3.1B.txt" is a tab delimited version of Appendix H sorted by Mnemonic.
+The text was copied from pdf using Preview.app and pasted into Microsoft Excel.app
+and from there into BBEdit.app on macOS. Some modifications were made.
+EOT
+}
+
+sub main()
+{
+    my ($configfile, $isafile);
+
+    if ($#ARGV != 1) {
+        usage();
+        return 1;
+    }
+
+    $configfile = $ARGV[0];
+    $isafile = $ARGV[1];
+
+    parse_config_file($configfile);
+    parse_isa_file($isafile);
+
+    return 0;
+}
+
+exit(main);
