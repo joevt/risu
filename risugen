@@ -125,8 +125,10 @@ sub parse_config_file($)
             exit(1);
         }
 
-        if ($tokens[0] =~ /^@(.*)/ ) {
-            @insn_groups = split(/,/, $1);
+        if ($tokens[0] =~ /^@.*/ ) {
+            my $line = join(' ', @tokens);
+            $line =~ s/^@\s*|\s+$//g;
+            @insn_groups = split(/\s*,\s*/, $line);
             next;
         }
 
