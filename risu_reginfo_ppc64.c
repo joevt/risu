@@ -124,8 +124,23 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     }
 
     if (m->gregs[CCR] != a->gregs[CCR]) {
+        uint32_t mask = ccr_mask;
+        if ((m->prev_insn & 0xfc6007bf) == 0xfc000000) { /* fcmpo or fcmpu */
+            int crf = (m->prev_insn >> 21) & 0x1c;
+            int cr1 = 4;
+            /* copy mask of cr1 to crf */
+            mask = (mask & ~(15 << (28-crf))) | (((mask >> (28-cr1)) & 15) << (28-crf));
+            mask &= ccr_mask;
+        }
+        else if ((m->prev_insn & 0xfc63ffff) == 0xfc000080) { /* mcrfs */
+            int bf  = (m->prev_insn >> 21) & 0x1c;
+            int bfa = (m->prev_insn >> 16) & 0x1c;
+            /* copy mask of bfa to bf */
+            mask = (mask & ~(15 << (28-bf))) | (((fpscr_mask >> (28-bfa)) & 15) << (28-bf));
+            mask &= ccr_mask;
+        }
         if (
-            (m->gregs[CCR] & ccr_mask) == (a->gregs[CCR] & ccr_mask)
+            (m->gregs[CCR] & mask) == (a->gregs[CCR] & mask)
         ) {
             a->gregs[CCR] = m->gregs[CCR];
         } else {
