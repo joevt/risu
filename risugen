@@ -163,8 +163,7 @@ sub parse_config_file($)
 
         my $fixedbits = 0;
         my $fixedbitmask = 0;
-        my $bitpos = 32;
-        my $insnwidth = 32;
+        my $insnwidth = 0;
         my $seenblock = 0;
 
         while (@bits) {
@@ -197,7 +196,11 @@ sub parse_config_file($)
             } elsif ($bit =~ /^[01]*$/) {
                 # fixed bits
                 $bitlen = length($bit);
-                $bitval = oct("0b".$bit);
+                if ($bitlen > 32) {
+                    $bitval = (oct("0b" . substr($bit,0, $bitlen - 32)) << 32) | oct("0b0" . substr($bit,$bitlen - 32,32));
+                } else {
+                    $bitval = oct("0b".$bit);
+                }
             } elsif ($bit =~ /^([a-zA-Z][a-zA-Z0-9]*):([0-9]+)$/) {
                 # variable field
                 $var = $1;
@@ -216,27 +219,40 @@ sub parse_config_file($)
                 exit(1);
             }
 
-            my $bitmask = oct("0b". '1' x $bitlen);
-            $bitpos -= $bitlen;
-            if ($bitpos < 0) {
+            my $bitmask;
+            if ($bitlen > 32) {
+                $bitmask = (oct("0b" . '1' x ($bitlen - 32)) << 32) | oct("0b0" . '1' x 32);
+            } else {
+                $bitmask = oct("0b". '1' x $bitlen);
+            }
+
+            $insnwidth += $bitlen;
+            if ($insnwidth > 64) {
                 print STDERR "$file:$.: ($insn $enc) too many bits specified\n";
                 exit(1);
             }
 
+            $fixedbits <<= $bitlen;
+            $fixedbitmask <<= $bitlen;
+
             if (defined $bitval) {
-                $fixedbits |= ($bitval << $bitpos);
-                $fixedbitmask |= ($bitmask << $bitpos);
+                $fixedbits |= $bitval;
+                $fixedbitmask |= $bitmask;
             } else {
-                push @fields, [ $var, $bitpos, $bitmask ];
+                push @fields, [ $var, 32 - $insnwidth, $bitmask ];
             }
         }
-        if ($bitpos == 16) {
+        if ($insnwidth == 16) {
             # assume this is a half-width thumb instruction
             # Note that we don't fiddle with the bitmasks or positions,
             # which means the generated insn will be in the high halfword!
-            $insnwidth = 16;
-        } elsif ($bitpos != 0) {
+            $fixedbits <<= 16;
+            $fixedbitmask <<= 16;
+        } elsif ($insnwidth < 32) {
             print STDERR "$file:$.: ($insn $enc) not enough bits specified\n";
+            exit(1);
+        } elsif ($insnwidth & 7) {
+            print STDERR "$file:$.: ($insn $enc) not enough bits to make the last byte\n";
             exit(1);
         }
         if ((($fixedbits & $fixedbitmask) != $fixedbits)
