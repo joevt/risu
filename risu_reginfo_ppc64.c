@@ -364,10 +364,10 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
 {
     int i;
 
-    fprintf(f, "2nd prev insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 8, ri->second_prev_insn);
-    fprintf(f, "previous insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip - 4, ri->prev_insn);
-    fprintf(f, "faulting insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip + 0, ri->faulting_insn);
-    fprintf(f, "    next insn @ 0x%0" PRIx " : 0x%08x\n", ri->nip + 4, ri->next_insn);
+    fprintf(f, "2nd prev insn @ %0" PRIx " : %08x\n", ri->nip - 8, ri->second_prev_insn);
+    fprintf(f, "previous insn @ %0" PRIx " : %08x\n", ri->nip - 4, ri->prev_insn);
+    fprintf(f, "faulting insn @ %0" PRIx " : %08x\n", ri->nip + 0, ri->faulting_insn);
+    fprintf(f, "    next insn @ %0" PRIx " : %08x\n", ri->nip + 4, ri->next_insn);
     fprintf(f, "\n");
 
     for (i = 0; i < 16; i++) {
