@@ -277,6 +277,7 @@ sub evaluate_groups ($$)
 {
     my ($insn_groups, $groupexpr) = @_;
     $groupexpr =~ s|,| && |g;
+    $groupexpr = "( " . $groupexpr . " ) && ! Skip";
     $groupexpr =~ s|(\b[_A-Za-z][-:.*\w]*)|grep(/^$1$/, @$insn_groups)|eg;
     eval $groupexpr;
 }
