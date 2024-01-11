@@ -453,6 +453,11 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
         }
     }
 
+    if (m->fpscr != a->fpscr) {
+        fprintf(f, "Mismatch: fpscr ");
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->fpscr, a->fpscr);
+    }
+
 #ifdef VRREGS
     for (i = 0; i < 32; i++) {
         if (m->vrregs.vrregs[i][0] != a->vrregs.vrregs[i][0] ||
