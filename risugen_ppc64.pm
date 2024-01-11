@@ -376,7 +376,7 @@ sub write_test_code($)
     $condprob = 1 - $condprob;
 
     # TODO better random number generator?
-    srand(0);
+    srand($params->{ 'srand' });
 
     print "Generating code using patterns: @keys...\n";
     progress_start(78, $numinsns);

@@ -319,6 +319,7 @@ and outputfile is the generated raw binary file.
 
 Valid options:
     --numinsns n : generate n instructions (default is 10000)
+    --srand n    : starting random number generator seed (default is 0)
     --fpscr n    : set initial FPSCR (arm) or FPCR (aarch64) value (default is 0)
     --condprob p : [ARM only] make instructions conditional with probability p
                    (default is 0, ie all instructions are always executed)
@@ -346,6 +347,7 @@ EOT
 sub main()
 {
     my $numinsns = 10000;
+    my $srand = 0;
     my $condprob = 0;
     my $fpscr = 0;
     my $fp_enabled = 1;
@@ -355,6 +357,7 @@ sub main()
 
     GetOptions( "help" => sub { usage(); exit(0); },
                 "numinsns=i" => \$numinsns,
+                "srand=i" => \$srand,
                 "fpscr=o" => \$fpscr,
                 "group=s" => \$groups,
                 "pattern=s" => \@pattern_re,
@@ -393,6 +396,7 @@ sub main()
         'condprob' => $condprob,
         'fpscr' => $fpscr,
         'numinsns' => $numinsns,
+        'srand' => $srand,
         'fp_enabled' => $fp_enabled,
         'sve_enabled' => $sve_enabled,
         'outfile' => $outfile,
