@@ -47,6 +47,39 @@ sub convert_to_IEEE($)
     return $ieee_value;
 }
 
+# convert float value to IEEE 754
+# input: floating point value (e.g. 1.23)
+# output: IEEE 754 double precision value
+sub convert_to_IEEE64($)
+{
+    my $ieee_value = 0;
+    my $float_value = $_[0];
+    if ($float_value eq "qnan") {
+        $ieee_value = 0x7ff8000000000000;
+    } elsif ($float_value eq "snan") {
+        $ieee_value = 0x7ff4000000000000;
+    } elsif ($float_value eq "-FLT_MAX") {
+        $ieee_value = 0xc7efffffe0000000;
+    } elsif ($float_value eq "-FLT_MIN") {
+        $ieee_value = 0xb810000000000000;
+    } elsif ($float_value eq "-DBL_MAX") {
+        $ieee_value = 0xffefffffffffffff;
+    } elsif ($float_value eq "-DBL_MIN") {
+        $ieee_value = 0x8010000000000000;
+    } elsif ($float_value eq "FLT_MIN") {
+        $ieee_value = 0x3810000000000000;
+    } elsif ($float_value eq "FLT_MAX") {
+        $ieee_value = 0x47efffffe0000000;
+    } elsif ($float_value eq "DBL_MIN") {
+        $ieee_value = 0x0010000000000000;
+    } elsif ($float_value eq "DBL_MAX") {
+        $ieee_value = 0x7fefffffffffffff;
+    } else {
+        $ieee_value = (unpack "Q", pack "d", $float_value);
+    }
+    return $ieee_value;
+}
+
 # returns a random double precision IEEE 754 value
 # output: 64 bit number
 sub get_random_IEEE_double_value()
@@ -240,6 +273,18 @@ sub write_mtfsb1($)
 {
     my $crbD = $_[0];
     insn32(63 << 26 | $crbD << 21 | 38 << 1 | 0);
+}
+
+sub write_mtfsfi($$)
+{
+    my ($crfD,$imm) = @_;
+    insn32(63 << 26 | $crfD << 23 | $imm << 12 | 134 << 1 | 0);
+}
+
+sub write_mtfsf($$)
+{
+    my ($FM,$frB) = @_;
+    insn32(63 << 26 | $FM << 17 | $frB << 11 | 711 << 1 | 0);
 }
 
 # writes the mtxer instruction
@@ -591,6 +636,122 @@ sub imm_test($$@) {
             }
         }
     }
+    return -1;
+}
+
+sub xer_update_test() {
+    my $file = $ENV{testfile}; # ppctests.cpp
+    open(CFILE, $file) or die "can't open $file: $!";
+    while (<CFILE>) {
+        if ( /^\s*xer_ov_test\("[^"]+", 0x(\w+)\);/ ) {
+            write_li32(3, -1);
+            write_mtxer(3);
+            write_li32(3, 2);
+            write_li32(4, 2);
+            insn32(hex($1));
+            write_risuop($OP_COMPARE);
+        }
+    }
+    close(CFILE) or die "can't close $file: $!";
+    return -1;
+}
+
+sub int_test() {
+    my $file = $ENV{testfile}; # ppcinttests.csv
+    open(CFILE, $file) or die "can't open $file: $!";
+    while (<CFILE>) {
+        write_li32(3, 0);
+        write_mtcrf(0xff, 3);
+        write_mtxer(3);
+        if (/rA=0x(\w+)/) {
+            write_li32(3, hex($1));
+        }
+        if (/rB=0x(\w+)/) {
+            write_li32(4, hex($1));
+        } else {
+            write_li32(4, 0);
+        }
+        if (/,0x(\w+)/) {
+            insn32(hex($1));
+            write_risuop($OP_COMPARE);
+        } else {
+            die "can't close $file: $!";
+        }
+    }
+    close(CFILE) or die "can't close $file: $!";
+    return -1;
+}
+
+sub write_load_double($$) {
+    my ($fD,$ieee_double) = @_;
+    write_li32(3, $ieee_double >> 32);
+    write_stw(3, $available_stack_slot);
+    if (($ieee_double & 0xffffffff) != ($ieee_double >> 32)) {
+        write_li32(3, $ieee_double);
+    }
+    write_stw(3, $available_stack_slot + 4);
+    write_lfd($fD, $available_stack_slot);
+}
+
+sub float_test() {
+    my $file = $ENV{testfile}; # ppcfloattests.csv
+    open(CFILE, $file) or die "can't open $file: $!";
+
+    write_li32(3, 0);
+    write_stw(3, $available_stack_slot);  # stw r3, $available_stack_slot(r1)
+    write_lfs(7, $available_stack_slot);  # lfs f6, $available_stack_slot(r1)
+
+    while (<CFILE>) {
+        write_load_double(3, 0);
+        if (/frA=([^,]+)/) {
+            write_load_double(4, convert_to_IEEE64($1));
+            #printf("A:$1 ");
+        } else {
+            write_load_double(4, 0);
+        }
+        if (/frB=([^,]+)/) {
+            write_load_double(5, convert_to_IEEE64($1));
+            #printf("B:$1 ");
+        } else {
+            write_load_double(5, 0);
+        }
+        if (/frC=([^,]+)/) {
+            write_load_double(6, convert_to_IEEE64($1));
+            #printf("C:$1 ");
+        } else {
+            write_load_double(6, 0);
+        }
+        #printf("\n");
+
+        write_li32(3, 0);
+        write_li32(4, 0);
+        write_mtcrf(0xff, 3);
+        write_mtfsf(0xff, 7); # clear fpscr
+        if (/round=(\w+)/) {
+            my $round;
+            if ($1 eq "RTN") {
+                write_mtfsfi(7,0);
+            } elsif ($1 eq "RTZ") {
+                write_mtfsfi(7,1);
+            } elsif ($1 eq "RPI") {
+                write_mtfsfi(7,2);
+            } elsif ($1 eq "RNI") {
+                write_mtfsfi(7,3);
+            } elsif ($1 eq "VEN") {
+                write_mtfsb1(24);
+            } else {
+                die "unknown round mode $file: $!";
+            }
+        }
+
+        if (/,0x(\w+)/) {
+            insn32(hex($1));
+        } else {
+            die "can't close $file: $!";
+        }
+        write_risuop($OP_COMPARE);
+    }
+    close(CFILE) or die "can't close $file: $!";
     return -1;
 }
 
