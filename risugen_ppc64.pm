@@ -44,24 +44,6 @@ sub get_num()
     return $num;
 }
 
-sub write_mov_ri16($$)
-{
-    my ($rd, $imm) = @_;
-
-    # li rd,immediate = addi rd, 0, $imm ; includes sign extension
-    insn32(0xe << 26 | $rd << 21 | ($imm & 0xffff));
-}
-
-sub write_mov_ri32($$)
-{
-    my ($rd, $imm) = @_;
-
-    # lis rd,immediate@h
-    insn32(0xf << 26 | $rd << 21 | (($imm >> 16) & 0xffff));
-    # ori rd,rd,immediate@l
-    insn32((0x18 << 26) | ($rd << 21) | ($rd << 16) | ($imm & 0xffff));
-}
-
 sub write_add_ri($$$)
 {
     my ($rt, $ra, $imm) = @_;
@@ -75,9 +57,16 @@ sub write_mov_ri($$)
     my ($rd, $imm) = @_;
 
     if ((($imm & 0xffff8000) != 0) && (($imm & 0xffff8000) != 0xffff8000)) {
-        write_mov_ri32($rd, $imm);
-    } else {
-        write_mov_ri16($rd, $imm);
+        # lis rd,immediate@h
+        insn32(0xf << 26 | $rd << 21 | (($imm >> 16) & 0xffff));
+        if ($imm & 0xffff) {
+            # ori rd,rd,immediate@l
+            insn32((0x18 << 26) | ($rd << 21) | ($rd << 16) | ($imm & 0xffff));
+        }
+    }
+    else {
+        # li rd,immediate = addi rd, 0, $imm ; includes sign extension
+        insn32(0xe << 26 | $rd << 21 | ($imm & 0xffff));
     }
 }
 
