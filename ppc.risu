@@ -67,7 +67,7 @@ CMPI PPC 001011 crfD:3 0 L:1 rA:5 imm:16 \
 !constraints { $rA != 1 && $L == 0; }
 
 CMPL PPC 011111 crfD:3 0 L:1 rA:5 rB:5 0000100000 0 \
-!constraints { $rA != 1 && $rB == 1 && $L == 0; }
+!constraints { $rA != 1 && $rB != 1 && $L == 0; }
 
 CMPLI PPC 001010 crfD:3 0 L:1 rA:5 imm:16 \
 !constraints { $rA != 1 && $L == 0; }
