@@ -344,6 +344,7 @@ Valid options:
                    Useful to test before support for FP is available.
     --sve        : Enable sve floating point.
     --be         : Generate instructions in Big-Endian byte order (ppc64 only).
+    --progress   : Show progress bar.
     --help       : Print this message.
 EOT
 }
@@ -355,6 +356,7 @@ sub main()
     my $condprob = 0;
     my $fpscr = 0;
     my $fp_enabled = 1;
+    my $progress = 0;
     my $sve_enabled = 0;
     my $big_endian = 0;
     my ($infile, $outfile);
@@ -374,6 +376,7 @@ sub main()
                 },
                 "be" => sub { $big_endian = 1; },
                 "no-fp" => sub { $fp_enabled = 0; },
+                "progress" => sub { $progress = 1; },
                 "sve" => sub { $sve_enabled = 1; },
         ) or return 1;
     # allow "--pattern re,re" and "--pattern re --pattern re"
@@ -410,6 +413,10 @@ sub main()
         'subarch' => $full_arch[1] || '',
         'bigendian' => $big_endian
     );
+
+    if ($progress) {
+        progress_show();
+    }
 
     write_test_code(\%params);
 
