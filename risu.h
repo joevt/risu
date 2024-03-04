@@ -12,6 +12,8 @@
 #ifndef RISU_H
 #define RISU_H
 
+#include "config.h"
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <ucontext.h>
@@ -19,13 +21,21 @@
 #include <getopt.h>
 #include <stdbool.h>
 
-#include "config.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Extra option processing for architectures */
 extern const struct option * const arch_long_opts;
 extern const char * const arch_extra_help;
 void process_arch_opt(int opt, const char *arg);
 void arch_init(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #define FIRST_ARCH_OPT   0x100
 
 /* GCC computed include to pull in the correct risu_reginfo_*.h for
@@ -36,6 +46,10 @@ void arch_init(void);
 #define REGINFO_HEADER(ARCH) REGINFO_HEADER1(ARCH)
 
 #include REGINFO_HEADER(ARCH)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void entrypoint_fn(void);
 
@@ -87,13 +101,13 @@ typedef enum {
 struct reginfo;
 
 typedef struct {
-   uint32_t magic;
-   uint32_t size;
-   uint32_t risu_op;
-   uintptr_t pc;
+    uint32_t magic;
+    uint32_t size;
+    int32_t risu_op;
+    uintptr_t pc;
 } trace_header_t;
 
-#define RISU_MAGIC  (('R' << 24) | ('I' << 16) | ('S' << 8) | 'U')
+#define RISU_MAGIC  ((uint32_t)(('R' << 24) | ('I' << 16) | ('S' << 8) | 'U'))
 
 /* Socket related routines */
 int master_connect(int port);
@@ -147,5 +161,9 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f);
 
 /* return size of reginfo */
 int reginfo_size(struct reginfo *ri);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RISU_H */

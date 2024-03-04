@@ -63,7 +63,7 @@ static RisuResult read_buffer(void *ptr, size_t bytes)
     size_t res;
 
     if (!trace) {
-        return recv_data_pkt(comm_fd, ptr, bytes);
+        return recv_data_pkt(comm_fd, ptr, (int)bytes);
     }
 
 #ifdef HAVE_ZLIB
@@ -84,7 +84,7 @@ static RisuResult write_buffer(void *ptr, size_t bytes)
     size_t res;
 
     if (!trace) {
-        return send_data_pkt(comm_fd, ptr, bytes);
+        return send_data_pkt(comm_fd, ptr, (int)bytes);
     }
 
 #ifdef HAVE_ZLIB
@@ -410,7 +410,7 @@ static void load_image(const char *imgfile)
         exit(EXIT_FAILURE);
     }
     close(fd);
-    image_start = addr;
+    image_start = (entrypoint_fn *)addr;
     image_start_address = (uintptr_t) addr;
 }
 
@@ -427,7 +427,7 @@ static void close_comm()
 static int master(void)
 {
     int result;
-    RisuResult res = sigsetjmp(jmpbuf, 1);
+    RisuResult res = (RisuResult)sigsetjmp(jmpbuf, 1);
 
     switch (res) {
     case RES_OK:
@@ -491,7 +491,7 @@ static const char *op_name(RisuOp op)
 static int apprentice(void)
 {
     int result;
-    RisuResult res = sigsetjmp(jmpbuf, 1);
+    RisuResult res = (RisuResult)sigsetjmp(jmpbuf, 1);
 
     switch (res) {
     case RES_OK:
@@ -606,7 +606,7 @@ static void usage(void)
     }
 }
 
-static struct option * setup_options(char **short_opts)
+static struct option * setup_options(const char **short_opts)
 {
     static struct option default_longopts[] = {
         {"help", no_argument, 0, '?'},
@@ -630,7 +630,7 @@ static struct option * setup_options(char **short_opts)
             continue;
         }
 
-        lopts = calloc(default_count + arch_count + 1, osize);
+        lopts = (struct option *)calloc(default_count + arch_count + 1, osize);
 
         /* Copy default opts + extra opts */
         memcpy(lopts, default_longopts, default_count * osize);
@@ -649,12 +649,11 @@ int risu_main(int argc, char **argv)
 {
     /* some handy defaults to make testing easier */
     uint16_t port = 9191;
-    char *hostname = "localhost";
+    const char *hostname = "localhost";
     char *imgfile;
     char *trace_fn = NULL;
     struct option *longopts;
-    char *shortopts;
-    stack_t ss;
+    const char *shortopts;
 
     longopts = setup_options(&shortopts);
 
@@ -726,6 +725,8 @@ int risu_main(int argc, char **argv)
     }
 
     load_image(imgfile);
+
+    stack_t ss;
 
     /* create alternate stack */
     ss.ss_sp = malloc(SIGSTKSZ);

@@ -56,7 +56,7 @@ RisuOp get_risuop(struct reginfo *ri)
     uint32_t op = insn & 0xf;
     uint32_t key = insn & ~0xf;
     uint32_t risukey = 0x00005af0;
-    return (key != risukey) ? OP_SIGILL : op;
+    return (RisuOp)((key != risukey) ? OP_SIGILL : op);
 }
 
 uintptr_t get_pc(struct reginfo *ri)
