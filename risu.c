@@ -645,7 +645,7 @@ extern size_t mcontext_min_size;
 extern size_t mcontext_max_size;
 #endif
 
-int main(int argc, char **argv)
+int risu_main(int argc, char **argv)
 {
     /* some handy defaults to make testing easier */
     uint16_t port = 9191;
