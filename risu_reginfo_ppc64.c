@@ -530,6 +530,10 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         }
     }
 
+    if (m->gregs[risu_MQ] != a->gregs[risu_MQ]) {
+        return 0;
+    }
+
     if (m->fpscr != a->fpscr) {
         if ((m->fpscr & fpscr_mask) == (a->fpscr & fpscr_mask)) {
             a->fpscr = m->fpscr;
@@ -1555,6 +1559,11 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
     if (m->gregs[risu_CCR] != a->gregs[risu_CCR]) {
         fprintf(f, "Mismatch: ccr ");
         fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[risu_CCR], a->gregs[risu_CCR]);
+    }
+
+    if (m->gregs[risu_MQ] != a->gregs[risu_MQ]) {
+        fprintf(f, "Mismatch: mq ");
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[risu_MQ], a->gregs[risu_MQ]);
     }
 
     for (i = 0; i < 32; i++) {
