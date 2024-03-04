@@ -322,29 +322,29 @@ where inputfile is a configuration file specifying instruction patterns
 and outputfile is the generated raw binary file.
 
 Valid options:
-    --numinsns n : generate n instructions (default is 10000)
-    --srand n    : starting random number generator seed (default is 0)
-    --fpscr n    : set initial FPSCR (arm) or FPCR (aarch64) value (default is 0)
-    --condprob p : [ARM only] make instructions conditional with probability p
-                   (default is 0, ie all instructions are always executed)
-    --group name[,name..]: only use instructions in all defined groups
-    --group be   : only use instructions if boolean expression of groups is true.
-                   Use Boolean operators ||, &&, ! and paranethesis. A group
+    --numinsns n : Generate n instructions (default is 10000).
+    --srand n    : Starting random number generator seed (default is 0).
+    --fpscr n    : Set initial FPSCR (arm) or FPCR (aarch64) value (default is 0).
+    --condprob p : [ARM only] Make instructions conditional with probability p
+                   (default is 0, ie all instructions are always executed).
+    --group name[,name..]: only use instructions in all defined groups.
+    --group be   : Only use instructions if boolean expression of groups is true.
+                   Use Boolean operators ||, &&, !, and paranethesis. A group
                    name's value is 1 if the instruction is part of that group.
-    --pattern re[,re...] : only use instructions matching regular expression
+    --pattern re[,re...] : Only use instructions matching regular expression.
                    Each re must match a full word (that is, we match on
                    the perl regex '\\b((re)|(re))\\b'). This means that
                    'VMULL' will match 'VMULL A1' and 'VMULL A2' but not
                    'VMULL_scalar A1'. This is generally what you wanted.
-    --not-pattern re[,re...] : exclude patterns matching regular expression.
+    --not-pattern re[,re...] : Exclude patterns matching regular expression.
                    These REs are applied after the matching pattern which
                    is useful if you want to exclude a specific instruction from
                    a general set you have excluded.
-    --no-fp      : disable floating point: no fp init, randomization etc.
+    --no-fp      : Disable floating point: no fp init, randomization etc.
                    Useful to test before support for FP is available.
-    --sve        : enable sve floating point
-    --be         : generate instructions in Big-Endian byte order (ppc64 only).
-    --help       : print this message
+    --sve        : Enable sve floating point.
+    --be         : Generate instructions in Big-Endian byte order (ppc64 only).
+    --help       : Print this message.
 EOT
 }
 
