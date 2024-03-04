@@ -166,6 +166,9 @@ sub write_random_register_data($)
 {
     my ($fp_enabled) = @_;
 
+    # bl +4
+    insn32((18 << 26) | (4) | (1));
+
     clear_vr_registers();
 
     write_random_ppc64_vrdata();
