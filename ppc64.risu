@@ -1142,7 +1142,12 @@ LHZX PPC64LE 011111 rt:5 ra:5 rb:5 01000101110 \
 @ format:D, book:I, page:70, Fixed-Point, P1, lmw # Load Multiple Word
 LMW PPC64BE 101110 rt:5 ra:5 imm:16 \
 !constraints { $rt > 13 && $ra > 1 && $ra != 13 && $imm <= 32752; } \
-!memory { reg_plus_imm($ra, $imm); }
+!memory { \
+    my $nr = 32 - $rt; \
+    my $regs = (1<<$nr) - 1; \
+    set_num("makezero", $regs & (1<<(31-$ra))); \
+    reg_plus_imm($ra, $imm); \
+}
 
 @ format:DQ, book:I, page:65, Fixed-Point, v2.03, lq # Load Quadword
 LQ PPC64LE 111000 rtp:5 ra:5 imm:12 0000 \
@@ -1156,26 +1161,30 @@ LQARX PPC64LE 011111 a:15 0100010100 rc:1
 LSWI PPC64LE 011111 rt:5 ra:5 rb:5 10010101010 \
 !constraints { \
     my $nb = $rb + ($rb ? 0 : 32); \
-    my $nr = int (($nb + 3) / 4); \
-    my $regs = (-1 << (64-$nr)) >> $rt; \
-    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
-    $ra > 1 && $ra != 13 && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
+    my $regs = regs_wrapped($rt, $nb); \
+    $ra > 1 && $ra != 13 && ($regs & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
 } \
-!memory { reg($ra); }
+!memory { \
+    set_num("makezero", get_num("regs") & (1<<(31-$ra))); \
+    reg($ra); \
+}
 
 @ format:X, book:I, page:72, Fixed-Point, P1, lswx # Load String Word Indexed
 LSWX PPC64LE 011111 rt:5 ra:5 rb:5 10000101010 \
 !constraints { \
     my $nb = irand(0x7f); \
-    set_num($nb); \
-    my $nr = int (($nb + 3) / 4); \
-    my $regs = (-1 << (64-$nr)) >> $rt; \
-    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
-    $ra > 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
+    set_num("nb", $nb); \
+    my $regs = regs_wrapped($rt, $nb); \
+    $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regs & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
 } \
 !memory { \
-    write_mov_ri($ra, get_num()); \
+    write_mov_ri($ra, get_num("nb")); \
     insn32((31 << 26) | ($ra << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1)); \
+    if ($ra) { \
+        set_num("makezero", get_num("regs") & (1<<(31-$ra))); \
+    } else { \
+        set_num("makezero", get_num("regs") & (1<<(31-$rb))); \
+    } \
     reg_plus_reg($ra, $rb); \
 }
 
@@ -2180,10 +2189,8 @@ STQCXD PPC64LE 011111 a:15 00101101101
 STSWI PPC64BE 011111 rs:5 ra:5 rb:5 10110101010 \
 !constraints { \
     my $nb = $rb + ($rb ? 0 : 32); \
-    my $nr = int (($nb + 3) / 4); \
-    my $regs = (-1 << (64-$nr)) >> $rs; \
-    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
-    $ra > 1 && $ra != 13 && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$ra)))) == 0; \
+    my $regs = regs_wrapped($rs, $nb); \
+    $ra > 1 && $ra != 13 && ($regs & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$ra)))) == 0; \
 } \
 !memory { reg($ra); }
 
@@ -2191,14 +2198,17 @@ STSWI PPC64BE 011111 rs:5 ra:5 rb:5 10110101010 \
 STSWX PPC64LE 011111 rs:5 ra:5 rb:5 10100 101010 \
 !constraints { \
     my $nb = irand(0x7f); \
-    set_num($nb); \
-    my $nr = int (($nb + 3) / 4); \
-    my $regs = (-1 << (64-$nr)) >> $rs; \
-    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff); \
-    $ra > 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regswrapped & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$ra)))) == 0; \
+    set_num("nb", $nb); \
+    my $regs = regs_wrapped($rs, $nb); \
+    $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && \
+        ( \
+            (($ra != 0) && ($regs & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$ra)))) == 0) \
+            || \
+            (($ra == 0) && ($regs & ((1<<(31-1)) | (1<<(31-13)) | (1<<(31-$rb)))) == 0) \
+        ) \
 } \
 !memory { \
-    write_mov_ri($ra, get_num()); \
+    write_mov_ri($ra, get_num("nb")); \
     insn32((31 << 26) | ($ra << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1)); \
     reg_plus_reg($ra, $rb); \
 }
