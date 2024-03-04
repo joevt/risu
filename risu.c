@@ -330,7 +330,7 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
             res = RES_MISMATCH_OP;
         } else if (op == OP_TESTEND) {
             res = RES_END;
-        } else {
+        } else if (op != OP_SIGILL) {
             reginfo_update(&ri[MASTER], uc, siaddr);
         }
         break;
