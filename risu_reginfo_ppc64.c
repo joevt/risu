@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/user.h>
+#include <float.h>
 
 #ifdef DPPC
     #include "risu_reginfo_dppc.h"
@@ -43,31 +44,57 @@ static uint32_t ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
 static uint32_t fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
 static uint32_t fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
 static uint32_t vrregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
+static uint32_t fp_opts     = 0; /* option bits. 1 = ignore NaN sign */
+enum {
+    fp_opt_ignore_QNaN_signs            = 0x00000001,
+    fp_opt_ignore_QNaN_values           = 0x00000002,
+    fp_opt_ignore_QNaN_diffs            = 0x00000004,
+    fp_opt_ignore_QNaN_load_float       = 0x00000008,
+    fp_opt_ignore_NaN_operand           = 0x00000010,
+    fp_opt_ignore_opposite_inf_operands = 0x00000020,
+    fp_opt_ignore_inf_x_0_operands      = 0x00000040,
+    fp_opt_ignore_div_zero              = 0x00000080,
+    fp_opt_ignore_underflow             = 0x00000100,
+    fp_opt_ignore_overflow              = 0x00000200,
+    fp_opt_ignore_round                 = 0x00000400,
+    fp_opt_ignore_round_s               = 0x00000800,
+    fp_opt_ignore_rsqrt_negative        = 0x00001000,
+    fp_opt_ignore_rsqrt_negative_zero   = 0x00002000,
+    fp_opt_ignore_rsqrt_zero            = 0x00004000,
+    fp_opt_ignore_qnan_from_inf         = 0x00008000,
+    fp_opt_ignore_qnan_from_unknown     = 0x00010000,
+    fp_opt_ignore_inf_from_unknown      = 0x00020000,
+    fp_opt_ignore_zero_signs            = 0x00040000,
+};
 
 static const struct option extra_opts[] = {
     {"ccr_mask"   , required_argument, NULL, FIRST_ARCH_OPT + 0 },
     {"fpscr_mask" , required_argument, NULL, FIRST_ARCH_OPT + 1 },
     {"fpregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 2 },
     {"vrregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 3 },
+    {"fp_opts",     required_argument, NULL, FIRST_ARCH_OPT + 4 },
     {0, 0, 0, 0}
 };
 
 const struct option * const arch_long_opts = &extra_opts[0];
 const char * const arch_extra_help =
+    "  --fpregs_mask=MASK Mask of fpregs to compare\n"
+    "  --vrregs_mask=MASK Mask of vrregs to compare\n"
     "  --ccr_mask=MASK    Mask of CCR bits to compare\n"
     "  --fpscr_mask=MASK  Mask of FPSCR bits to compare\n"
-    "  --fpregs_mask=MASK Mask of fpregs to compare\n"
-    "  --vrregs_mask=MASK Mask of vrregs to compare\n";
+    "  --fp_opts=OPTS     Options for comparing fpregs\n"
+    ;
 
 void process_arch_opt(int opt, const char *arg)
 {
-    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 3);
+    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 4);
     uint32_t val = (uint32_t)strtoul(arg, 0, 16);
     switch (opt - FIRST_ARCH_OPT) {
         case 0: ccr_mask    = val; break;
         case 1: fpscr_mask  = val; break;
         case 2: fpregs_mask = val; break;
         case 3: vrregs_mask = val; break;
+        case 4: fp_opts     = val; break;
     }
 }
 
@@ -332,6 +359,85 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 #endif
 }
 
+bool denormalized(uint64_t n) {
+    return (((n >> 52) & 0x7ff) == 0) && ((n & ~(1LL<<63)) != 0); // exponent is zero and mantissa is not zero
+}
+
+bool zero(uint64_t n) {
+    return (n & ~(1LL<<63)) == 0;
+}
+
+uint64_t signz(uint64_t n) {
+    return (n & (1LL<<63));
+}
+
+uint64_t signinf(uint64_t n) {
+    return ((n & (1LL<<63)) | 0x7ff0000000000000ULL);
+}
+
+bool negative(uint64_t n) {
+    return (n >> 63);
+}
+
+bool infinite(uint64_t n) {
+    return (n & ~(1LL<<63)) == 0x7ff0000000000000ULL;
+}
+
+bool is_nan(uint64_t n) {
+    return (n & ~(1LL<<63)) > 0x7ff0000000000000ULL;
+}
+
+bool isqnan(uint64_t n) {
+    return (n & ~(1LL<<63)) == 0x7ff8000000000000ULL;
+}
+
+bool anyqnan(uint64_t n) {
+    return (n & ~(1LL<<63)) >= 0x7ff8000000000000ULL;
+}
+
+bool neganyqnan(uint64_t n) {
+    return n >= 0xfff8000000000000ULL;
+}
+
+bool snan(uint64_t n) {
+    return is_nan(n) && !anyqnan(n);
+}
+
+bool qsnan(uint64_t n) {
+    return (n & ~(1LL<<63)) > 0x7ff8000000000000ULL;
+}
+
+int64_t ABS(int64_t x) {
+    return (((x) < 0) ? -(x) : (x));
+}
+
+int exponent(uint64_t n) {
+    if (zero(n))
+        return -4096;
+    int exp = (int)((n >> 52) & 0x7ff);
+    if (exp == 0x7ff)
+        return 4096;
+    if (exp == 0) {
+        uint64_t x;
+        for (x = n & ((1LL << 52) - 1); x < (1LL << 52); x <<= 1, exp--) {}
+    }
+    return exp - 1023;
+}
+
+uint64_t mantissa(uint64_t n) {
+    return (n & ((1ULL<<52)-1)) + ((((n >> 52) & 0x7ff) == 0) ? (1ULL<<52) : 0);
+}
+
+uint64_t normalize(uint64_t n) {
+    if (!denormalized(n))
+        return n;
+
+    int exp = 1536 + 1; // underflow adds 1536
+    uint64_t x;
+    for (x = n & ((1LL << 52) - 1); x < (1LL << 52); x <<= 1, exp--) {}
+    return (n & (1LL<<63)) | ((uint64_t)exp << 52) | (x & ((1LL << 52) - 1));
+}
+
 /* reginfo_is_eq: compare the reginfo structs, returns nonzero if equal */
 int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 {
@@ -339,6 +445,11 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     if (get_risuop(a) == OP_SIGILL && (a->next_insn & (0xe << 26)) == (0xe << 26)) {
         gregs_mask &= ~(1 << (31-((a->next_insn >> 21) & 31)));
     }
+
+    int rt = (m->prev_insn >> 21) & 31;
+    int ra = (m->prev_insn >> 16) & 31;
+    int rb = (m->prev_insn >> 11) & 31;
+    int rc = (m->prev_insn >>  6) & 31;
 
     int i;
     for (i = 0; i < 32; i++) {
@@ -390,7 +501,905 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 
     for (i = 0; i < 32; i++) {
         if (m->fpregs[i] != a->fpregs[i]) {
-            if ((1 << (31-i)) & ~fpregs_mask) {
+            if (
+                ((1 << (31-i)) & ~fpregs_mask) ||
+                (
+                    (fp_opts & fp_opt_ignore_QNaN_signs) &&
+                    anyqnan(a->fpregs[i]) &&
+                    anyqnan(m->fpregs[i]) &&
+                    ((a->fpregs[i] & ~(1ULL<<63)) == (m->fpregs[i] & ~(1ULL<<63)))
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_QNaN_values) &&
+                    neganyqnan(a->fpregs[i]) &&
+                    neganyqnan(m->fpregs[i])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_QNaN_diffs) &&
+                    anyqnan(a->fpregs[i]) &&
+                    anyqnan(m->fpregs[i])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_QNaN_load_float) &&
+                    (
+                        ((m->second_prev_insn & 0xfc0007fe) == 0x7c00046e) || /* lfsux */
+                        ((m->second_prev_insn & 0xfc000000) == 0xc4000000) || /* lfsu */
+                        ((m->second_prev_insn & 0xfc0007ff) == 0x7c00042e) || /* lfsx */
+                        ((m->second_prev_insn & 0xfc000000) == 0xc0000000) || /* lfs */
+                        0
+                    ) &&
+                    (((m->second_prev_insn >> 21) & 31) == i) &&
+                    (m->fpregs[i] & 0xfff7ffffffffffffULL) == (a->fpregs[i] & 0xfff7ffffffffffffULL) &&
+                    (m->fpregs[i] & 0x0008000000000000ULL) == 0
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_NaN_operand) &&
+                    (
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc00002a) || /* fadd */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000028) || /* fsub */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rb != i) &&
+                    (
+                        is_nan(m->fpregs[ra]) ||
+                        is_nan(m->fpregs[rb]) ||
+                        0
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_NaN_operand) &&
+                    (
+                        ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                        ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rc != i) &&
+                    (
+                        is_nan(m->fpregs[ra]) ||
+                        is_nan(m->fpregs[rc]) ||
+                        0
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_NaN_operand) &&
+                    (
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rb != i) &&
+                    (rc != i) &&
+                    (
+                        is_nan(m->fpregs[ra]) ||
+                        is_nan(m->fpregs[rb]) ||
+                        is_nan(m->fpregs[rc]) ||
+                        0
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_opposite_inf_operands) &&
+                    (
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc00002a) || /* fadd */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rb != i) &&
+                    infinite(m->fpregs[ra]) &&
+                    infinite(m->fpregs[rb]) &&
+                    negative(m->fpregs[ra]) != negative(m->fpregs[rb])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_opposite_inf_operands) &&
+                    (
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000028) || /* fsub */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rb != i) &&
+                    infinite(m->fpregs[ra]) &&
+                    infinite(m->fpregs[rb]) &&
+                    negative(m->fpregs[ra]) == negative(m->fpregs[rb])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_opposite_inf_operands) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rb != i) &&
+                    (rc != i) &&
+                    (exponent(m->fpregs[ra]) + exponent(m->fpregs[rc])) >= 2048 &&
+                    infinite(m->fpregs[rb]) &&
+                    (
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                0
+                            ) &&
+                            (negative(m->fpregs[ra]) != negative(m->fpregs[rc])) == negative(m->fpregs[rb])
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                0
+                            ) &&
+                            (negative(m->fpregs[ra]) != negative(m->fpregs[rc])) != negative(m->fpregs[rb])
+                        ) ||
+                        0
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_inf_x_0_operands) &&
+                    (
+                        ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                        ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rc != i) &&
+                    (
+                        (
+                            infinite(m->fpregs[ra]) &&
+                            zero(m->fpregs[rc])
+                        ) ||
+                        (
+                            zero(m->fpregs[ra]) &&
+                            infinite(m->fpregs[rc])
+                        )
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_div_zero) && // includes 0/0 though different results may be expected
+                    (
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                        ((m->prev_insn & 0xfc1f07fe) == 0xec000030) || /* fres */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (rb != i) &&
+                    zero(m->fpregs[rb])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_underflow) &&
+                    (
+                        (
+                            (
+                                ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) || /* frsp */
+                                ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                ((m->prev_insn & 0xfc1f07fe) == 0xec000030) || /* fres */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (fabs(*(double*)(&m->fpregs[i])) < FLT_MIN) && // m is smaller than float
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 // a is tiny
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                
+                                0
+                            ) &&
+                            (rt == i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 &&
+                            (
+                                (
+                                    (ra != i) &&
+                                    (rc != i) &&
+                                    (exponent(m->fpregs[ra]) + exponent(m->fpregs[rc])) < -126 // multiply underflow
+                                ) ||
+                                (ra == i) || (rc == i)
+                            )
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 &&
+                            (
+                                (
+                                    (ra != i) &&
+                                    (rb != i) &&
+                                    (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb])) < -126 // divide underflow
+                                ) ||
+                                (ra == i) || (rb == i)
+                            )
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) || /* frsp */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (rb != i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 &&
+                            exponent(m->fpregs[rb]) < -126
+                            // denormalized 36f0000000000000 is converted to 0 in G4 but not intel
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) || /* frsp */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (rb == i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 &&
+                            exponent(m->fpregs[i]) < -126 + 192
+                            // underflow exception adds 192 to exponent on PPC but not Intel
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                ((m->prev_insn & 0xfc0007fe) == 0xfc000028) || /* fsub */
+                                ((m->prev_insn & 0xfc0007fe) == 0xfc00002a) || /* fadd */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            m->fpregs[i] == signz(a->fpregs[i]) && // m is zero
+                            (exponent(a->fpregs[i]) < -1022) // a is tiny
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            m->fpregs[i] == signz(a->fpregs[i]) && // m is zero
+                            (exponent(a->fpregs[i]) < -126) // a is tiny
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 &&
+                            ((ra == i) || exponent(m->fpregs[ra]) < -126) &&
+                            ((rb == i) || exponent(m->fpregs[rb]) < -126)
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            exponent(a->fpregs[i]) < -126 &&
+                            ABS(exponent(m->fpregs[i]) - exponent(a->fpregs[i]) - 192) <= 1
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rc != i) &&
+                            exponent(a->fpregs[i]) < -126 && // a is zero or denormalized
+                            (exponent(m->fpregs[ra]) + exponent(m->fpregs[rc]) < -1022)
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rc != i) &&
+                            m->fpregs[i] == signz(a->fpregs[i]) && // m is zero
+                            denormalized(a->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) + exponent(m->fpregs[rc]) < -1022)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc00f83e) == 0xfc000032) && /* fmul */
+                            (rt == i) && (
+                                (ra == i) || (rc == i)
+                            ) &&
+                            exponent(a->fpregs[i]) < -126 && // a is tiny
+                            (exponent(m->fpregs[ra]) < 0x200)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb != i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            denormalized(a->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb]) < -1022)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signz(m->fpregs[i]) && // a is zero
+                            (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb]) < -1022)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb == i) &&
+                            a->fpregs[i] == signz(m->fpregs[i]) && // a is zero
+                            exponent(a->fpregs[ra]) < -126
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            (ra == i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signz(m->fpregs[i]) // a is zero
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            ( (ra == i) || (rb == i) ) &&
+                            exponent(a->fpregs[i]) < -1022 && // a is tiny or zero
+                            exponent(m->fpregs[i]) < -1022 + 1536 // underflow exception adds 1536 on PPC but not on Intel
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xec000024) && /* fdivs */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signz(m->fpregs[i]) && // a is zero
+                            (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb]) < -126)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xec000024) && /* fdivs */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb != i) &&
+                            m->fpregs[i] == signz(a->fpregs[i]) && // m is zero
+                            (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb]) < -126)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xec000024) && /* fdivs */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb == i) &&
+                            a->fpregs[i] == signz(m->fpregs[i]) && // a is zero
+                            denormalized(a->fpregs[ra])
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xec000024) && /* fdivs */
+                            (rt == i) &&
+                            (rb != i) &&
+                            (ra == i) &&
+                            a->fpregs[i] == signz(m->fpregs[i]) // a is zero
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc1f07fe) == 0xec000030) && /* fres */
+                            (rt == i) &&
+                            exponent(a->fpregs[i]) < -126 && // a is near zero
+                            (
+                                rb == i ||
+                                (exponent(m->fpregs[rb]) >= 126)
+                            )
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc1f07fe) == 0xec000030) && /* fres */
+                            (rt == i) &&
+                            (rb == i) &&
+                            exponent(a->fpregs[i]) < -126 && // a is near zero
+                            (exponent(m->fpregs[i]) == exponent(a->fpregs[i]) + 192)
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc0007fe) == 0xfc000028) || /* fsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                                ((m->prev_insn & 0xfc0007fe) == 0xfc00002a) || /* fadd */
+                                ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) && // same sign
+                            denormalized(a->fpregs[i]) &&
+                            ABS((int64_t)(normalize(a->fpregs[i]) - m->fpregs[i])) <= 0x20000
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            m->fpregs[i] == signz(a->fpregs[i]) && // m is zero
+                            denormalized(a->fpregs[i])
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc00002a) && /* fadd */
+                            (rt == i) && (
+                                (ra == i) ||
+                                (rb == i)
+                            ) &&
+                            m->fpregs[i] == signz(a->fpregs[i]) && // a is zero
+                            denormalized(a->fpregs[i])
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            exponent(a->fpregs[i]) < -126 && // tiny
+                            exponent(m->fpregs[i]) == exponent(a->fpregs[i]) + 192 &&
+                            ABS((int64_t)(mantissa(a->fpregs[i]) - mantissa(m->fpregs[i]))) <= 0x20000000
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rc != i) &&
+                            (rb != i) &&
+                            (
+                                (
+                                    zero(m->fpregs[ra]) &&
+                                    denormalized(m->fpregs[rc])
+                                ) || (
+                                    zero(m->fpregs[rc]) &&
+                                    denormalized(m->fpregs[ra])
+                                )
+                            ) &&
+                            zero(m->fpregs[i]) &&
+                            a->fpregs[i] == m->fpregs[rb]
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra == i || exponent(a->fpregs[ra]) < -126) && // a is tiny
+                            (rb == i || exponent(a->fpregs[rb]) < -126) && // b is tiny
+                            (rc == i || exponent(a->fpregs[rc]) < -126)    // c is tiny
+                        )
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_overflow) &&
+                    (
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+
+                                0
+                            ) &&
+                            (rt == i) &&
+                            infinite(m->fpregs[i]) &&
+                            isqnan(a->fpregs[i]) &&
+                            (
+                                ra == i || rb == i || rc == i
+                            )
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                                ((m->prev_insn & 0xfc1f07fe) == 0xec000030) || /* fres */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (infinite(m->fpregs[i]) || (fabs(*(double*)(&m->fpregs[i])) >= FLT_MAX)) &&
+                            exponent(a->fpregs[i]) > 126
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                                ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                                ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (
+                                (
+                                    (ra != i) &&
+                                    (rb != i) &&
+                                    denormalized(a->fpregs[rb]) &&
+                                    exponent(m->fpregs[ra]) > 126 &&
+                                    exponent(m->fpregs[i]) == exponent(a->fpregs[ra]) - 192 &&
+                                    ABS((int64_t)(mantissa(a->fpregs[ra]) - mantissa(m->fpregs[i]))) <= 0x20000000
+                                ) ||
+                                (
+                                    ((ra != i) && exponent(m->fpregs[ra]) > 126) ||
+                                    ((rb != i) && exponent(m->fpregs[rb]) > 126)
+                                ) ||
+                                (
+                                    infinite(a->fpregs[i]) &&
+                                    (ra == i || rb == i)
+                                )
+                            )
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rc != i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) + exponent(m->fpregs[rc]) >= 126)
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                                ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            exponent(m->fpregs[rb]) >= 126
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rc != i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) + exponent(m->fpregs[rc]) >= 1023)
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                                0
+                            ) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (rt == i) && (
+                                (rb == i) || (ra == i)
+                            )
+                        ) ||
+                        (
+                            (
+                                ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                                0
+                            ) &&
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rc == i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) > 0)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb]) >= 1023)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xfc000024) && /* fdiv */
+                            (rt == i) &&
+                            ((rb == i) || (ra == i)) &&
+                            a->fpregs[i] == signinf(m->fpregs[i])
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc0007fe) == 0xec000024) && /* fdivs */
+                            (rt == i) &&
+                            (ra != i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb]) >= 126)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc1f07fe) == 0xec000030) && /* fres */
+                            (rt == i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) && (
+                                (rb == i) || (-exponent(m->fpregs[rb]) >= 126) // includes zero
+                            )
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) && /* frsp */
+                            (rt == i) &&
+                            (rb != i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            (exponent(m->fpregs[rb]) >= 126)
+                        ) ||
+                        (
+                            ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) && /* frsp */
+                            (rt == i) &&
+                            (rb == i) &&
+                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            infinite(a->fpregs[i])
+                        )
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_round) && (
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000028) || /* fsub */
+                        ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc00002a) || /* fadd */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    !anyqnan(a->fpregs[i]) &&
+                    !anyqnan(m->fpregs[i]) &&
+                    (ABS((int64_t)(a->fpregs[i] - m->fpregs[i])) <= 1)
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_round) && (
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000034) || /* frsqrte */
+                        ((m->prev_insn & 0xfc1f07fe) == 0xec000030) || /* fres */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    !anyqnan(a->fpregs[i]) &&
+                    !anyqnan(m->fpregs[i]) &&
+                    (ABS((int64_t)(a->fpregs[i] - m->fpregs[i])) <= (1LL<<47))
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_round_s) && (
+                        ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) || /* frsp */
+                        ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    !anyqnan(a->fpregs[i]) &&
+                    !anyqnan(m->fpregs[i]) &&
+                    (ABS((int64_t)(a->fpregs[i] - m->fpregs[i])) <= 0x800000000ULL)
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_round_s) && (
+                        ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) || /* frsp */
+                        ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    !anyqnan(a->fpregs[i]) &&
+                    !anyqnan(m->fpregs[i]) &&
+                    exponent(a->fpregs[i]) < -126 &&
+                    exponent(m->fpregs[i]) < -126 &&
+                    (ABS((int64_t)(a->fpregs[i] - m->fpregs[i])) <= 0x800000000000ULL)
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_round_s) && (
+                        ((m->prev_insn & 0xfc0007fe) == 0xec00002a) || /* fadds */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000028) || /* fsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (ra != i) &&
+                    (rb != i) &&
+                    !anyqnan(a->fpregs[i]) &&
+                    !anyqnan(m->fpregs[i]) &&
+                    exponent(m->fpregs[i]) < -126 &&
+                    exponent(a->fpregs[i]) < -126 &&
+                    exponent(a->fpregs[ra]) < -126 &&
+                    exponent(m->fpregs[rb]) < -126
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_rsqrt_negative) && (
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000034) || /* frsqrte */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    isqnan(a->fpregs[i]) && (
+                        (rb == i) || negative(m->fpregs[rb])
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_rsqrt_negative_zero) && (
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000034) || /* frsqrte */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (rb != i) &&
+                    m->fpregs[rb] == 0x8000000000000000ULL &&
+                    a->fpregs[i] == 0xfff0000000000000ULL
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_rsqrt_zero) && (
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000034) || /* frsqrte */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (rb != i) &&
+                    m->fpregs[rb] == 0 &&
+                    a->fpregs[i] == 0x7ff0000000000000ULL
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_qnan_from_inf) && (
+                        ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    isqnan(a->fpregs[i]) && (
+                        ((ra != i) && infinite(a->fpregs[ra])) ||
+                        ((rc != i) && infinite(a->fpregs[rc]))
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_qnan_from_unknown) && (
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    isqnan(a->fpregs[i]) && (
+                        (ra == i) || (rb == i)
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_inf_from_unknown) && (
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000034) || /* frsqrte */
+                        ((m->prev_insn & 0xfc1f07fe) == 0xec000030) || /* fres */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    infinite(a->fpregs[i]) &&
+                    (rb == i)
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_inf_from_unknown) && (
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    infinite(a->fpregs[i]) && (
+                        (ra == i) || (rb == i)
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_inf_from_unknown) && (
+                        ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                        ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    infinite(a->fpregs[i]) && (
+                        (ra == i) || (rc == i)
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_zero_signs) &&
+                    zero(a->fpregs[i]) &&
+                    zero(m->fpregs[i]) &&
+                    ((a->fpregs[i] & ~(1ULL<<63)) == (m->fpregs[i] & ~(1ULL<<63)))
+                )
+            ) {
                 a->fpregs[i] = m->fpregs[i];
             } else {
                 return 0;
