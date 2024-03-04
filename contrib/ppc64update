@@ -209,6 +209,10 @@ sub parse_config_file($)
                 } else {
                     $bitval = oct("0b".$bit);
                 }
+            } elsif ($bit =~ /^([0-9]\w*):([0-9]+)$/) {
+                # fixed bits
+                $bitlen = $2;
+                $bitval = $1;
             } elsif ($bit =~ /^([a-zA-Z][a-zA-Z0-9]*):([0-9]+)$/) {
                 # variable field
                 $var = $1;
