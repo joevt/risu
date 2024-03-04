@@ -109,7 +109,8 @@ sub write_random_ppc64_fpdata()
 {
     for (my $i = 0; $i < 32; $i++) {
         # store a random doubleword value at r1+16
-        write_store_64(irand(0xfffff), irand(0xfffff), 0x10);
+        write_store_64(irand(0xffffffff), irand(0xffffffff), 0x10); # any floating-point number
+        #write_store_64(irand(0xfffff), irand(0xfffff), 0x10); # denormalized floating-point number
         # lfd f$i, 0x10(r1)
         insn32((0x32 << 26) | ($i << 21) | (0x1 << 16) | 0x10);
     }
