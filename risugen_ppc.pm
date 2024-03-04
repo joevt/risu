@@ -471,13 +471,11 @@ sub write_init_xer_code()
     write_mtxer($rS);
 }
 
-# sets the lr to zero
+# sets the lr to pc
 sub write_init_lr_code()
 {
-    my $rS = 10;
-    my $value = 0;
-    write_li32($rS, $value);
-    insn32(0x7d4803a6);
+    # bl +4
+    insn32((18 << 26) | (4) | (1));
 }
 
 # set the ctr to zero

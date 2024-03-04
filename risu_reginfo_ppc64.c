@@ -481,6 +481,12 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         if (m->gregs[i] != a->gregs[i]) {
             if ((1 << (31-i)) & ~local_gregs_mask) {
                 /* a->gregs[i] = m->fpregs[i]; */
+            } else if (
+                ((m->prev_insn & 0xfc1fffff) == 0x7c0802a6) && // mflr
+                rt == i &&
+                m->gregs[i] - m->gregs[risu_NIP] == a->gregs[i] - a->gregs[risu_NIP] // allow pc relative matching
+            ) {
+                a->gregs[i] = m->fpregs[i];
             } else {
                 return 0;
             }
@@ -488,6 +494,10 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     }
 
     if (m->gregs[risu_XER] != a->gregs[risu_XER]) {
+        return 0;
+    }
+
+    if (m->gregs[risu_LNK] - m->gregs[risu_NIP] != a->gregs[risu_LNK] - a->gregs[risu_NIP]) {
         return 0;
     }
 
@@ -1521,6 +1531,11 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
             fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n",
                     m->gregs[i], a->gregs[i]);
         }
+    }
+
+    if (m->gregs[risu_LNK] - m->gregs[risu_NIP] != a->gregs[risu_LNK] - a->gregs[risu_NIP]) {
+        fprintf(f, "Mismatch: lr (relative to pc) ");
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[risu_LNK] - m->gregs[risu_NIP], a->gregs[risu_LNK] - a->gregs[risu_NIP]);
     }
 
     if (m->gregs[risu_XER] != a->gregs[risu_XER]) {
