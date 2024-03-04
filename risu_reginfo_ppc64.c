@@ -137,11 +137,6 @@ int reginfo_size(struct reginfo *ri)
     return sizeof(*ri);
 }
 
-#ifdef __APPLE__
-size_t mcontext_min_size = -1;
-size_t mcontext_max_size = 0;
-#endif
-
 #if defined(__APPLE__) && defined(VRREGS)
 static void savevec(void *vrregs, void *vscr, void *vrsave)
 {
@@ -201,15 +196,6 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
     ucontext_t *uc = (ucontext_t *)vuc;
 #endif
 
-#ifndef __APPLE__
-#else
-    if (uc->uc_mcsize < mcontext_min_size) {
-        mcontext_min_size = uc->uc_mcsize;
-    }
-    if (uc->uc_mcsize > mcontext_max_size) {
-        mcontext_max_size = uc->uc_mcsize;
-    }
-#endif
     int i;
 
     memset(ri, 0, sizeof(*ri));
