@@ -467,8 +467,14 @@ uint64_t normalize(uint64_t n) {
 int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 {
     uint32_t local_gregs_mask = gregs_mask;
-    if (get_risuop(a) == OP_SIGILL && (a->next_insn & (0xe << 26)) == (0xe << 26)) {
-        local_gregs_mask &= ~(1 << (31-((a->next_insn >> 21) & 31)));
+    if (get_risuop(a) == OP_SIGILL) {
+        if (
+            (a->next_insn & 0xfc000000) == 0x38000000 || // addi or li (used by risugen_ppc)
+            (a->next_insn & 0xfc0007ff) == 0x7c000050 || // subf       (used by risugen_ppc64)
+            0
+        ) {
+            local_gregs_mask &= ~(1 << (31-((a->next_insn >> 21) & 31)));
+        }
     }
 
     int rt = (m->prev_insn >> 21) & 31;
