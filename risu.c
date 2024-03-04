@@ -16,8 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <signal.h>
-#include <ucontext.h>
 #include <setjmp.h>
 #include <assert.h>
 #include <sys/stat.h>
@@ -26,6 +24,14 @@
 #include <string.h>
 
 #include "risu.h"
+#include "endianswap.h"
+
+#ifdef NO_SIGNAL
+    sig_handler_fn *sig_handler;
+#else
+    #include <signal.h>
+    #include <ucontext.h>
+#endif
 
 enum {
     MASTER = 0, APPRENTICE = 1
@@ -37,11 +43,12 @@ static trace_header_t header;
 
 /* Memblock pointer into the execution image. */
 static void *memblock;
+arch_ptr_t arch_memblock;
 
 static int comm_fd;
 static bool trace;
 static size_t signal_count;
-static uintptr_t signal_pc;
+static arch_ptr_t signal_pc;
 static bool is_setup = false;
 
 #ifdef HAVE_ZLIB
@@ -55,6 +62,37 @@ static gzFile gz_trace_file;
 static sigjmp_buf jmpbuf;
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+/* Endian functions */
+
+static void byte_swap_header(trace_header_t *header) {
+    header->magic = (uint32_t)BYTESWAP_32(header->magic);
+    header->size = (uint32_t)BYTESWAP_32(header->size);
+    header->risu_op = (int32_t)BYTESWAP_32(header->risu_op);
+    if (sizeof(header->pc) == 8)
+        header->pc = (arch_ptr_t)BYTESWAP_64((uint64_t)header->pc);
+    else
+        header->pc = (arch_ptr_t)BYTESWAP_32(header->pc);
+}
+
+static void header_host_to_arch(trace_header_t *header) {
+    if (
+    #ifdef __LITTLE_ENDIAN__
+        !
+    #endif
+        !get_arch_big_endian()
+   ) {
+        if (header->magic != BYTESWAP_32(RISU_MAGIC)) {
+            byte_swap_header(header);
+        }
+    }
+}
+
+static void header_arch_to_host(trace_header_t *header) {
+    if (header->magic == BYTESWAP_32(RISU_MAGIC)) {
+        byte_swap_header(header);
+    }
+}
 
 /* I/O functions */
 
@@ -109,7 +147,7 @@ static void respond(RisuResult r)
 
 static RisuResult send_register_info(void *uc, void *siaddr)
 {
-    uint64_t paramreg;
+    arch_ptr_t paramreg;
     RisuResult res;
     RisuOp op;
     void *extra;
@@ -131,6 +169,7 @@ static RisuResult send_register_info(void *uc, void *siaddr)
     case OP_SIGILL:
         header.size = reginfo_size(&ri[MASTER]);
         extra = &ri[MASTER];
+        reginfo_host_to_arch(&ri[MASTER]);
         break;
     case OP_COMPAREMEM:
         header.size = MEMBLOCKLEN;
@@ -147,6 +186,7 @@ static RisuResult send_register_info(void *uc, void *siaddr)
         abort();
     }
 
+    header_host_to_arch(&header);
     res = write_buffer(&header, sizeof(header));
     if (res != RES_OK) {
         return res;
@@ -166,12 +206,12 @@ static RisuResult send_register_info(void *uc, void *siaddr)
     case OP_TESTEND:
         return RES_END;
     case OP_SETMEMBLOCK:
-        paramreg = get_reginfo_paramreg(&ri[MASTER]);
-        memblock = (void *)(uintptr_t)paramreg;
+        arch_memblock = get_reginfo_paramreg(&ri[MASTER]);
+        memblock = get_arch_memory(arch_memblock);
         break;
     case OP_GETMEMBLOCK:
         paramreg = get_reginfo_paramreg(&ri[MASTER]);
-        set_ucontext_paramreg(uc, paramreg + (uintptr_t)memblock);
+        set_ucontext_paramreg(uc, paramreg + arch_memblock);
         break;
     case OP_SETUPBEGIN:
     case OP_SETUPEND:
@@ -183,7 +223,7 @@ static RisuResult send_register_info(void *uc, void *siaddr)
     return RES_OK;
 }
 
-static void master_sigill(int sig, siginfo_t *si, void *uc)
+static void master_sigill(int sig, arch_siginfo_t *si, void *uc)
 {
     RisuResult r;
     signal_count++;
@@ -210,6 +250,7 @@ static RisuResult recv_register_info(struct reginfo *ri)
     if (res != RES_OK) {
         return res;
     }
+    header_arch_to_host(&header);
 
     if (header.magic != RISU_MAGIC) {
         /* If the magic number is wrong, we can't trust the rest. */
@@ -226,6 +267,7 @@ static RisuResult recv_register_info(struct reginfo *ri)
         }
         respond(RES_OK);
         res = read_buffer(ri, header.size);
+        reginfo_arch_to_host(ri);
         if (res == RES_OK && header.size != reginfo_size(ri)) {
             /* The payload size is not self-consistent with the data. */
             return RES_BAD_SIZE_REGINFO;
@@ -252,7 +294,7 @@ static RisuResult recv_register_info(struct reginfo *ri)
 
 static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
 {
-    uint64_t paramreg;
+    arch_ptr_t paramreg;
     RisuResult res;
     RisuOp op;
 
@@ -298,8 +340,8 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
             res = RES_MISMATCH_OP;
             break;
         }
-        paramreg = get_reginfo_paramreg(&ri[APPRENTICE]);
-        memblock = (void *)(uintptr_t)paramreg;
+        arch_memblock = get_reginfo_paramreg(&ri[APPRENTICE]);
+        memblock = get_arch_memory(arch_memblock);
         break;
 
     case OP_GETMEMBLOCK:
@@ -308,7 +350,7 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
             break;
         }
         paramreg = get_reginfo_paramreg(&ri[APPRENTICE]);
-        set_ucontext_paramreg(uc, paramreg + (uintptr_t)memblock);
+        set_ucontext_paramreg(uc, paramreg + arch_memblock);
         break;
 
     case OP_COMPAREMEM:
@@ -341,7 +383,7 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
     return res;
 }
 
-static void apprentice_sigill(int sig, siginfo_t *si, void *uc)
+static void apprentice_sigill(int sig, arch_siginfo_t *si, void *uc)
 {
     RisuResult r;
     signal_count++;
@@ -360,8 +402,11 @@ static void apprentice_sigill(int sig, siginfo_t *si, void *uc)
     }
 }
 
-static void set_sigill_handler(void (*fn) (int, siginfo_t *, void *))
+static void set_sigill_handler(sig_handler_fn *fn)
 {
+#ifdef NO_SIGNAL
+    sig_handler = fn;
+#else
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
 
@@ -376,6 +421,7 @@ static void set_sigill_handler(void (*fn) (int, siginfo_t *, void *))
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
+#endif
 }
 
 uintptr_t image_start_address;
@@ -432,8 +478,8 @@ static int master(void)
     switch (res) {
     case RES_OK:
         set_sigill_handler(&master_sigill);
-        fprintf(stderr, "starting image at 0x%"PRIxPTR"\n",
-                image_start_address);
+        fprintf(stderr, "starting image at 0x%" PRIxARCHPTR "\n",
+                get_arch_start_address());
         do_image();
         fprintf(stderr, "image returned unexpectedly\n");
         result = EXIT_FAILURE;
@@ -446,18 +492,18 @@ static int master(void)
         break;
 
     case RES_BAD_IO:
-        fprintf(stderr, "i/o error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "i/o error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_SIGBUS:
-        fprintf(stderr, "bus error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "bus error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
         close_comm();
         result = EXIT_FAILURE;
         break;
 
     default:
-        fprintf(stderr, "unexpected result %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", res, signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "unexpected result %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", res, signal_pc - get_arch_start_address(), signal_count);
         close_comm();
         result = EXIT_FAILURE;
         break;
@@ -496,8 +542,8 @@ static int apprentice(void)
     switch (res) {
     case RES_OK:
         set_sigill_handler(&apprentice_sigill);
-        fprintf(stderr, "starting image at 0x%"PRIxPTR"\n",
-                image_start_address);
+        fprintf(stderr, "starting image at 0x%" PRIxARCHPTR "\n",
+                get_arch_start_address());
         do_image();
         fprintf(stderr, "image returned unexpectedly\n");
         result = EXIT_FAILURE;
@@ -509,7 +555,7 @@ static int apprentice(void)
         break;
 
     case RES_MISMATCH_REG:
-        fprintf(stderr, "Mismatch reg at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Mismatch reg at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
         fprintf(stderr, "master reginfo:\n");
         reginfo_dump(&ri[MASTER], stderr);
         fprintf(stderr, "apprentice reginfo:\n");
@@ -519,63 +565,63 @@ static int apprentice(void)
         break;
 
     case RES_MISMATCH_MEM:
-        fprintf(stderr, "Mismatch mem at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Mismatch mem at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_MISMATCH_OP:
         /* Out of sync, but both opcodes are known valid. */
-        fprintf(stderr, "Mismatch header at image + 0x%"PRIxPTR" after %zd checkpoints\n"
+        fprintf(stderr, "Mismatch header at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n"
                 "mismatch detail (master : apprentice):\n"
                 "  opcode: %s vs %s\n",
-                signal_pc - image_start_address,
+                signal_pc - get_arch_start_address(),
                 signal_count, op_name(header.risu_op),
                 op_name(get_risuop(&ri[APPRENTICE])));
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_IO:
-        fprintf(stderr, "i/o error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "i/o error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_MAGIC:
-        fprintf(stderr, "Unexpected magic number: %#08x at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.magic, signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Unexpected magic number: %#08x at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.magic, signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_HEADER:
-        fprintf(stderr, "Payload size %u in header exceeds expected size %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, sizeof(struct reginfo), signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Payload size %u in header exceeds expected size %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, (int)sizeof(struct reginfo), signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_REGINFO:
-        fprintf(stderr, "Payload size %u in header doesn't match received payload size %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, reginfo_size(&ri[MASTER]), signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Payload size %u in header doesn't match received payload size %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, reginfo_size(&ri[MASTER]), signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_MEMBLOCK:
-        fprintf(stderr, "Payload size %u in header doesn't match the expected memory block payload size %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, MEMBLOCKLEN, signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Payload size %u in header doesn't match the expected memory block payload size %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, MEMBLOCKLEN, signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_ZERO:
-        fprintf(stderr, "Payload size %u in header is expected to be 0 at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.size, signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Payload size %u in header is expected to be 0 at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_OP:
-        fprintf(stderr, "Unexpected opcode: %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", header.risu_op, signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Unexpected opcode: %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.risu_op, signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     case RES_SIGBUS:
-        fprintf(stderr, "bus error at image + 0x%"PRIxPTR" after %zd checkpoints\n", signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "bus error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
 
     default:
-        fprintf(stderr, "Unexpected result %d at image + 0x%"PRIxPTR" after %zd checkpoints\n", res, signal_pc - image_start_address, signal_count);
+        fprintf(stderr, "Unexpected result %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", res, signal_pc - get_arch_start_address(), signal_count);
         result = EXIT_FAILURE;
         break;
     }
@@ -726,6 +772,7 @@ int risu_main(int argc, char **argv)
 
     load_image(imgfile);
 
+#ifndef NO_SIGNAL
     stack_t ss;
 
     /* create alternate stack */
@@ -740,6 +787,7 @@ int risu_main(int argc, char **argv)
         perror("sigaltstac");
         exit(EXIT_FAILURE);
     }
+#endif
 
     /* E.g. select requested SVE vector length. */
     arch_init();

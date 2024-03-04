@@ -13,18 +13,31 @@
 
 #include "risu.h"
 #include <stdio.h>
+#ifdef NO_SIGNAL
+#else
 #include <signal.h>
 #include <ucontext.h>
+#endif
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/user.h>
 
-#include "risu_reginfo_ppc64.h"
-
-#define XER 37
-#define CCR 38
+#ifdef DPPC
+    #include "risu_reginfo_dppc.h"
+    #include "../../ppcemu.h"
+    enum {
+        DPPC_RISU_ROM_START = 0xf0000000,
+        DPPC_RISU_RAM_START = 0xb0000000,
+        DPPC_RISU_STACK     = 0xbfff79b0,
+        DPPC_RISU_RAM_SIZE  = 0x20000000,
+    };
+    MemCtrlBase *mem_ctrl = NULL;
+#else
+    #include "risu_reginfo_ppc64.h"
+#endif
+#include "endianswap.h"
 
 static uint32_t ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
 static uint32_t fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
@@ -58,17 +71,65 @@ void process_arch_opt(int opt, const char *arg)
     }
 }
 
+arch_ptr_t get_arch_start_address() {
+#ifdef DPPC
+    return DPPC_RISU_ROM_START;
+#else
+    return (arch_ptr_t)image_start_address;
+#endif
+}
+
+void * get_arch_memory(arch_ptr_t arch_memblock) {
+#ifdef DPPC
+    AddressMapEntry* ref_entry;
+    ref_entry = mem_ctrl->find_range(arch_memblock);
+    if (!ref_entry)
+        return NULL;
+
+    uint32_t load_offset = arch_memblock - ref_entry->start;
+
+    return ref_entry->mem_ptr + load_offset;
+#else
+    return (void *)arch_memblock;
+#endif
+}
+
 void arch_init(void)
 {
+#ifdef DPPC
+    mem_ctrl = new MemCtrlBase;
+
+    // configure CPU clocks
+    uint64_t bus_freq      = 50000000ULL;
+    uint64_t timebase_freq = bus_freq / 4;
+
+    // initialize virtual CPU and request MPC750 CPU aka G3
+    ppc_cpu_init(mem_ctrl, PPC_VER::MPC750, timebase_freq);
+
+    mem_ctrl->add_ram_region(DPPC_RISU_RAM_START, DPPC_RISU_RAM_SIZE);
+    mem_ctrl->add_rom_region(DPPC_RISU_ROM_START, (uint32_t)image_size);
+    mem_ctrl->set_data(DPPC_RISU_ROM_START, (uint8_t*)image_start_address, (uint32_t)image_size);
+    ppc_state.pc = DPPC_RISU_ROM_START;
+    ppc_state.gpr[1] = DPPC_RISU_STACK;
+#endif
 }
 
 void do_image()
 {
     int i;
+#ifdef DPPC
+    uint8_t *stack_bytes = (uint8_t *)get_arch_memory(DPPC_RISU_STACK + 0x3C);
+    for (i = 0; i < 32768; i++)
+        stack_bytes[i] = i;
+
+    power_on = true;
+    ppc_exec();
+#else
     uint8_t stack_bytes[32768];
     for (i = 0; i < sizeof(stack_bytes); i++)
         stack_bytes[i] = i;
     image_start();
+#endif
 }
 
 int reginfo_size(struct reginfo *ri)
@@ -132,10 +193,15 @@ static void savevec(void *vrregs, void *vscr, void *vrsave)
 #endif
 
 /* reginfo_init: initialize with a ucontext */
-void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
+void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 {
+#ifdef NO_SIGNAL
+    void *uc = vuc;
+#else
+    ucontext_t *uc = (ucontext_t *)vuc;
+#endif
+
 #ifndef __APPLE__
-    int i;
 #else
     if (uc->uc_mcsize < mcontext_min_size) {
         mcontext_min_size = uc->uc_mcsize;
@@ -144,85 +210,78 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
         mcontext_max_size = uc->uc_mcsize;
     }
 #endif
+    int i;
 
     memset(ri, 0, sizeof(*ri));
 
-    uintptr_t pc = get_uc_pc(uc, siaddr);
-    uintptr_t ibegin = image_start_address;
-    uintptr_t iend = image_start_address + image_size;
-    ri->second_prev_insn = (pc - 8) >= ibegin && (pc - 8) < iend ? *((uint32_t *) (pc - 8)) : 0;
-    ri->prev_insn        = (pc - 4) >= ibegin && (pc - 4) < iend ? *((uint32_t *) (pc - 4)) : 0;
-    ri->faulting_insn    = (pc + 0) >= ibegin && (pc + 0) < iend ? *((uint32_t *) (pc + 0)) : 0;
-    ri->next_insn        = (pc + 4) >= ibegin && (pc + 4) < iend ? *((uint32_t *) (pc + 4)) : 0;
-    ri->nip = pc - ibegin;
+    arch_ptr_t pc = get_uc_pc(uc, siaddr);
+    arch_ptr_t ibegin = get_arch_start_address();
+    arch_ptr_t iend = (arch_ptr_t)(get_arch_start_address() + image_size);
+    uint8_t * pc_ptr = (uint8_t *)get_arch_memory(pc);
+    ri->second_prev_insn = arch_to_host_32((pc - 8) >= ibegin && (pc - 8) < iend ? *((uint32_t *) (pc_ptr - 8)) : 0);
+    ri->prev_insn        = arch_to_host_32((pc - 4) >= ibegin && (pc - 4) < iend ? *((uint32_t *) (pc_ptr - 4)) : 0);
+    ri->faulting_insn    = arch_to_host_32((pc + 0) >= ibegin && (pc + 0) < iend ? *((uint32_t *) (pc_ptr + 0)) : 0);
+    ri->next_insn        = arch_to_host_32((pc + 4) >= ibegin && (pc + 4) < iend ? *((uint32_t *) (pc_ptr + 4)) : 0);
+    ri->nip = (uint32_t)(pc - ibegin);
 
-#ifndef __APPLE__
-    for (i = 0; i < NGREG; i++) {
+#if defined(DPPC)
+    for (i = 0; i < 32; i++) {
+        ri->gregs[i] = ppc_state.gpr[i];
+    }
+    ri->gregs[risu_NIP  ] = pc;
+    ri->gregs[risu_MSR  ] = ppc_state.msr;
+    ri->gregs[risu_CTR  ] = ppc_state.spr[SPR::CTR];
+    ri->gregs[risu_LNK  ] = ppc_state.spr[SPR::LR];
+    ri->gregs[risu_XER  ] = ppc_state.spr[SPR::XER];
+    ri->gregs[risu_CCR  ] = ppc_state.cr;
+    ri->gregs[risu_MQ   ] = ppc_state.spr[SPR::MQ];
+    ri->gregs[risu_DAR  ] = ppc_state.spr[SPR::DAR];
+    ri->gregs[risu_DSISR] = ppc_state.spr[SPR::DSISR];
+#elif defined(__APPLE__)
+    for (i = 0; i < 32; i++) {
+        if (sizeof(uc->uc_mcontext->ss.r0) == 8)
+            ri->gregs[i] = ((uint64_t*)(&uc->uc_mcontext->ss.r0))[i];
+        else
+            ri->gregs[i] = ((uint32_t*)(&uc->uc_mcontext->ss.r0))[i];
+    }
+    ri->gregs[risu_NIP  ] = pc;
+    ri->gregs[risu_MSR  ] = uc->uc_mcontext->ss.srr1; /* MSR */
+    ri->gregs[risu_CTR  ] = uc->uc_mcontext->ss.ctr;
+    ri->gregs[risu_LNK  ] = uc->uc_mcontext->ss.lr;
+    ri->gregs[risu_XER  ] = uc->uc_mcontext->ss.xer;
+    ri->gregs[risu_CCR  ] = uc->uc_mcontext->ss.cr;
+    ri->gregs[risu_MQ   ] = uc->uc_mcontext->ss.mq;
+    ri->gregs[risu_DAR  ] = uc->uc_mcontext->es.dar; /* DAR */
+    ri->gregs[risu_DSISR] = uc->uc_mcontext->es.dsisr; /* DSISR */
+#else
+    for (i = 0; i < 32; i++) {
         ri->gregs[i] = uc->uc_mcontext.gp_regs[i];
     }
-#else
-    ri->gregs[ 0] = uc->uc_mcontext->ss.r0;
-    ri->gregs[ 1] = uc->uc_mcontext->ss.r1;
-    ri->gregs[ 2] = uc->uc_mcontext->ss.r2;
-    ri->gregs[ 3] = uc->uc_mcontext->ss.r3;
-    ri->gregs[ 4] = uc->uc_mcontext->ss.r4;
-    ri->gregs[ 5] = uc->uc_mcontext->ss.r5;
-    ri->gregs[ 6] = uc->uc_mcontext->ss.r6;
-    ri->gregs[ 7] = uc->uc_mcontext->ss.r7;
-    ri->gregs[ 8] = uc->uc_mcontext->ss.r8;
-    ri->gregs[ 9] = uc->uc_mcontext->ss.r9;
-    ri->gregs[10] = uc->uc_mcontext->ss.r10;
-    ri->gregs[11] = uc->uc_mcontext->ss.r11;
-    ri->gregs[12] = uc->uc_mcontext->ss.r12;
-    ri->gregs[13] = uc->uc_mcontext->ss.r13;
-    ri->gregs[14] = uc->uc_mcontext->ss.r14;
-    ri->gregs[15] = uc->uc_mcontext->ss.r15;
-    ri->gregs[16] = uc->uc_mcontext->ss.r16;
-    ri->gregs[17] = uc->uc_mcontext->ss.r17;
-    ri->gregs[18] = uc->uc_mcontext->ss.r18;
-    ri->gregs[19] = uc->uc_mcontext->ss.r19;
-    ri->gregs[20] = uc->uc_mcontext->ss.r20;
-    ri->gregs[21] = uc->uc_mcontext->ss.r21;
-    ri->gregs[22] = uc->uc_mcontext->ss.r22;
-    ri->gregs[23] = uc->uc_mcontext->ss.r23;
-    ri->gregs[24] = uc->uc_mcontext->ss.r24;
-    ri->gregs[25] = uc->uc_mcontext->ss.r25;
-    ri->gregs[26] = uc->uc_mcontext->ss.r26;
-    ri->gregs[27] = uc->uc_mcontext->ss.r27;
-    ri->gregs[28] = uc->uc_mcontext->ss.r28;
-    ri->gregs[29] = uc->uc_mcontext->ss.r29;
-    ri->gregs[30] = uc->uc_mcontext->ss.r30;
-    ri->gregs[31] = uc->uc_mcontext->ss.r31;
-    ri->gregs[32] = pc; /* NIP */
-    ri->gregs[33] = uc->uc_mcontext->ss.srr1; /* MSR */
-    ri->gregs[34] = 0; /* orig r3 */
-    ri->gregs[35] = uc->uc_mcontext->ss.ctr;
-    ri->gregs[36] = uc->uc_mcontext->ss.lr;
-    ri->gregs[37] = uc->uc_mcontext->ss.xer;
-    ri->gregs[38] = uc->uc_mcontext->ss.cr;
-    ri->gregs[39] = uc->uc_mcontext->ss.mq;
-    ri->gregs[40] = 0; /* TRAP */
-    ri->gregs[41] = uc->uc_mcontext->es.dar; /* DAR */
-    ri->gregs[42] = uc->uc_mcontext->es.dsisr; /* DSISR */
-    ri->gregs[43] = 0; /* RESULT */
-    ri->gregs[44] = 0; /* DSCR */
+    ri->gregs[risu_NIP  ] = pc;
+    ri->gregs[risu_MSR  ] = uc->uc_mcontext.gp_regs[MSR  ];
+    ri->gregs[risu_CTR  ] = uc->uc_mcontext.gp_regs[CTR  ];
+    ri->gregs[risu_LNK  ] = uc->uc_mcontext.gp_regs[LNK  ];
+    ri->gregs[risu_XER  ] = uc->uc_mcontext.gp_regs[XER  ];
+    ri->gregs[risu_CCR  ] = uc->uc_mcontext.gp_regs[CCR  ];
+    ri->gregs[risu_MQ   ] = uc->uc_mcontext.gp_regs[MQ   ];
+    ri->gregs[risu_DAR  ] = uc->uc_mcontext.gp_regs[DAR  ];
+    ri->gregs[risu_DSISR] = uc->uc_mcontext.gp_regs[DSISR];
 #endif
 
-#ifndef __APPLE__
-    memcpy(ri->fpregs, uc->uc_mcontext.fp_regs, 32 * sizeof(double));
-    ri->fpscr = uc->uc_mcontext.fp_regs[32];
-#else
+#if defined(DPPC)
+    memcpy(ri->fpregs, ppc_state.fpr, 32 * sizeof(double));
+    ri->fpscr = ppc_state.fpscr;
+#elif defined(__APPLE__)
     memcpy(ri->fpregs, uc->uc_mcontext->fs.fpregs, 32 * sizeof(double));
     ri->fpscr = uc->uc_mcontext->fs.fpscr;
+#else
+    memcpy(ri->fpregs, uc->uc_mcontext.fp_regs, 32 * sizeof(double));
+    ri->fpscr = uc->uc_mcontext.fp_regs[32];
 #endif
 
 #ifdef VRREGS
-#ifndef __APPLE__
-    memcpy(ri->vrregs.vrregs, uc->uc_mcontext.v_regs->vrregs,
-           sizeof(ri->vrregs.vrregs[0]) * 32);
-    ri->vrregs.vscr = uc->uc_mcontext.v_regs->vscr;
-    ri->vrregs.vrsave = uc->uc_mcontext.v_regs->vrsave;
-#else
+#if defined(DPPC)
+#elif defined(__APPLE__)
     if (uc->uc_mcsize >= (sizeof(struct mcontext))) {
         memcpy(ri->vrregs.vrregs, uc->uc_mcontext->vs.save_vr,
                sizeof(ri->vrregs.vrregs[0]) * 32);
@@ -238,37 +297,51 @@ void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr)
         ri->vrregs.save_vrvalid = 0;
     }
     ri->vrregs.vrsave = uc->uc_mcontext->ss.vrsave;
+#else
+    memcpy(ri->vrregs.vrregs, uc->uc_mcontext.v_regs->vrregs,
+           sizeof(ri->vrregs.vrregs[0]) * 32);
+    ri->vrregs.vscr = uc->uc_mcontext.v_regs->vscr;
+    ri->vrregs.vrsave = uc->uc_mcontext.v_regs->vrsave;
 #endif
 #endif
 
 #ifdef SAVESTACK
-    memcpy(ri->stack, (uint8_t*)ri->gregs[1] - (sizeof(ri->stack) / 2), sizeof(ri->stack));
+    uint8_t *r1_ptr = (uint8_t *)get_arch_memory(ri->gregs[1]);
+    memcpy(ri->stack, r1_ptr - (sizeof(ri->stack) / 2), sizeof(ri->stack));
 #endif
 }
 
 /* reginfo_update: update the context */
-void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr)
+void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 {
-#ifndef __APPLE__
-    uc->uc_mcontext.gp_regs[38] = ri->gregs[38];
+#if defined(DPPC)
+    ppc_state.cr = ri->gregs[risu_CCR];
+#elif defined(__APPLE__)
+    ucontext_t *uc = (ucontext_t *)vuc;
+    uc->uc_mcontext->ss.cr = ri->gregs[risu_CCR];
 #else
-    uc->uc_mcontext->ss.cr = ri->gregs[38];
+    ucontext_t *uc = (ucontext_t *)vuc;
+    uc->uc_mcontext.gp_regs[CR] = ri->gregs[risu_CCR];
 #endif
 
-#ifndef __APPLE__
-    memcpy(uc->uc_mcontext.fp_regs, ri->fpregs, 32 * sizeof(double));
-    uc->uc_mcontext.fp_regs[32] = ri->fpscr;
-#else
+#if defined(DPPC)
+    memcpy(ppc_state.fpr, ri->fpregs, 32 * sizeof(double));
+    ppc_state.fpscr = ri->fpscr;
+#elif defined(__APPLE__)
     memcpy(uc->uc_mcontext->fs.fpregs, ri->fpregs, 32 * sizeof(double));
     uc->uc_mcontext->fs.fpscr = ri->fpscr;
+#else
+    memcpy(uc->uc_mcontext.fp_regs, ri->fpregs, 32 * sizeof(double));
+    uc->uc_mcontext.fp_regs[32] = ri->fpscr;
 #endif
 
 #ifdef VRREGS
-#ifndef __APPLE__
-    uc->uc_mcontext.v_regs->vscr = ri->vrregs.vscr;
-#else
+#if defined(DPPC)
+#elif defined(__APPLE__)
     memcpy(uc->uc_mcontext->vs.save_vscr, ri->vrregs.vscr,
            sizeof(ri->vrregs.vscr[0]) * 4);
+#else
+    uc->uc_mcontext.v_regs->vscr = ri->vrregs.vscr;
 #endif
 #endif
 }
@@ -292,11 +365,11 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         }
     }
 
-    if (m->gregs[XER] != a->gregs[XER]) {
+    if (m->gregs[risu_XER] != a->gregs[risu_XER]) {
         return 0;
     }
 
-    if (m->gregs[CCR] != a->gregs[CCR]) {
+    if (m->gregs[risu_CCR] != a->gregs[risu_CCR]) {
         uint32_t mask = ccr_mask;
         if ((m->prev_insn & 0xfc6007bf) == 0xfc000000) { /* fcmpo or fcmpu */
             int crf = (m->prev_insn >> 21) & 0x1c;
@@ -313,9 +386,9 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
             mask &= ccr_mask;
         }
         if (
-            (m->gregs[CCR] & mask) == (a->gregs[CCR] & mask)
+            (m->gregs[risu_CCR] & mask) == (a->gregs[risu_CCR] & mask)
         ) {
-            a->gregs[CCR] = m->gregs[CCR];
+            a->gregs[risu_CCR] = m->gregs[risu_CCR];
         } else {
             return 0;
         }
@@ -377,22 +450,16 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
     }
 
     fprintf(f, "\n");
-    fprintf(f, "\tnip    : %0" PRIx "\n", ri->gregs[32]);
-    fprintf(f, "\tmsr    : %0" PRIx "\n", ri->gregs[33]);
-#ifndef __APPLE__
-    fprintf(f, "\torig r3: %0" PRIx "\n", ri->gregs[34]);
-#endif
-    fprintf(f, "\tctr    : %0" PRIx "\n", ri->gregs[35]);
-    fprintf(f, "\tlnk    : %0" PRIx "\n", ri->gregs[36]);
-    fprintf(f, "\txer    : %0" PRIx "\n", ri->gregs[37]);
-    fprintf(f, "\tccr    : %0" PRIx "\n", ri->gregs[38]);
-    fprintf(f, "\tmq     : %0" PRIx "\n", ri->gregs[39]);
-#ifndef __APPLE__
-    fprintf(f, "\ttrap   : %0" PRIx "\n", ri->gregs[40]);
-    fprintf(f, "\tdar    : %0" PRIx "\n", ri->gregs[41]);
-    fprintf(f, "\tdsisr  : %0" PRIx "\n", ri->gregs[42]);
-    fprintf(f, "\tresult : %0" PRIx "\n", ri->gregs[43]);
-    fprintf(f, "\tdscr   : %0" PRIx "\n\n", ri->gregs[44]);
+    fprintf(f, "\tnip    : %0" PRIx "\n", ri->gregs[risu_NIP  ]);
+    fprintf(f, "\tmsr    : %0" PRIx "\n", ri->gregs[risu_MSR  ]);
+    fprintf(f, "\tctr    : %0" PRIx "\n", ri->gregs[risu_CTR  ]);
+    fprintf(f, "\tlnk    : %0" PRIx "\n", ri->gregs[risu_LNK  ]);
+    fprintf(f, "\txer    : %0" PRIx "\n", ri->gregs[risu_XER  ]);
+    fprintf(f, "\tccr    : %0" PRIx "\n", ri->gregs[risu_CCR  ]);
+    fprintf(f, "\tmq     : %0" PRIx "\n", ri->gregs[risu_MQ   ]);
+#if !defined(__APPLE__) && !defined(DPPC)
+    fprintf(f, "\tdar    : %0" PRIx "\n", ri->gregs[risu_DAR  ]);
+    fprintf(f, "\tdsisr  : %0" PRIx "\n", ri->gregs[risu_DSISR]);
 #endif
 
     for (i = 0; i < 16; i++) {
@@ -412,7 +479,7 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
             ri->vrregs.vscr[2], ri->vrregs.vscr[3]
     );
     fprintf(f, "\tvrsave : %08x\n", ri->vrregs.vrsave);
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(DPPC)
     fprintf(f, "\tvrsave2 : %08x\n", ri->vrregs.vrsave2);
     fprintf(f, "\tsave_vrvalid : %08x\n\n", ri->vrregs.save_vrvalid);
 #endif
@@ -436,14 +503,14 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
         }
     }
 
-    if (m->gregs[XER] != a->gregs[XER]) {
+    if (m->gregs[risu_XER] != a->gregs[risu_XER]) {
         fprintf(f, "Mismatch: xer ");
-        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[XER], a->gregs[XER]);
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[risu_XER], a->gregs[risu_XER]);
     }
 
-    if (m->gregs[CCR] != a->gregs[CCR]) {
+    if (m->gregs[risu_CCR] != a->gregs[risu_CCR]) {
         fprintf(f, "Mismatch: ccr ");
-        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[CCR], a->gregs[CCR]);
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[risu_CCR], a->gregs[risu_CCR]);
     }
 
     for (i = 0; i < 32; i++) {
@@ -476,4 +543,55 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
     }
 #endif
     return !ferror(f);
+}
+
+#if defined(DPPC)
+static void reginfo_swap(struct reginfo *ri) {
+    int i;
+
+    ri->second_prev_insn = (uint32_t)BYTESWAP_32(ri->second_prev_insn);
+    ri->prev_insn = (uint32_t)BYTESWAP_32(ri->prev_insn);
+    ri->faulting_insn = (uint32_t)BYTESWAP_32(ri->faulting_insn);
+    ri->next_insn = (uint32_t)BYTESWAP_32(ri->next_insn);
+    ri->nip = (uint32_t)BYTESWAP_32(ri->nip);
+    for (i = 0; i < risu_NGREG; i++) {
+        if (sizeof(ri->gregs[i]) == 8)
+            ri->gregs[i] = BYTESWAP_64(ri->gregs[i]);
+        else
+            ri->gregs[i] = (uint32_t)BYTESWAP_32(ri->gregs[i]);
+    }
+    for (i = 0; i < 32; i++) {
+        ri->fpregs[i] = BYTESWAP_64(ri->fpregs[i]);
+    }
+    if (sizeof(ri->fpscr) == 8)
+        ri->fpscr = BYTESWAP_64(ri->fpscr);
+    else
+        ri->fpscr = (uint32_t)BYTESWAP_32(ri->fpscr);
+#ifdef VRREGS
+    int j;
+    for (i = 0; i < 32; i++) {
+        for (j = 0; j < 4; j++) {
+            ri->vrregs[i][j] = BYTESWAP_32(ri->vrregs[i][j]);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        ri->vscr[4] = BYTESWAP_32(ri->vscr[4]);
+    }
+    ri->vrsave = BYTESWAP_32(ri->vrsave);
+    ri->vrsave2 = BYTESWAP_32(ri->vrsave2);
+    ri->save_vrvalid = BYTESWAP_32(ri->save_vrvalid);
+#endif
+}
+#endif
+
+void reginfo_host_to_arch(struct reginfo *ri) {
+#if defined(DPPC)
+    reginfo_swap(ri);
+#endif
+}
+
+void reginfo_arch_to_host(struct reginfo *ri) {
+#if defined(DPPC)
+    reginfo_swap(ri);
+#endif
 }
