@@ -31,17 +31,28 @@ my $periodic_reg_random = 1;
 # Maximum alignment restriction permitted for a memory op.
 my $MAXALIGN = 64;
 
-my $num = 0;
+my %num;
 
-sub set_num($)
+sub set_num($$)
 {
-    my ($n) = @_;
-    $num = $n;
+    my ($name, $n) = @_;
+    $num{$name} = $n;
 }
 
-sub get_num()
+sub get_num($)
 {
-    return $num;
+    my ($name) = @_;
+    return $num{$name};
+}
+
+sub regs_wrapped($$)
+{
+    my ($rt,$nb) = @_;
+    my $nr = int (($nb + 3) / 4);
+    my $regs = (-1 << (64-$nr)) >> $rt;
+    my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff);
+    set_num("regs", $regswrapped);
+    return $regswrapped;
 }
 
 sub write_add_ri($$$)
@@ -50,6 +61,14 @@ sub write_add_ri($$$)
 
     # addi rt, ra, immd
     insn32((0xe << 26) | ($rt << 21) | ($ra << 16) | ($imm & 0xffff));
+}
+
+sub write_subf_r($$$)
+{
+    my ($rt, $ra, $rb) = @_;
+
+    # subf rt, ra, rb
+    insn32((31 << 26) | ($rt << 21) | ($ra << 16) | ($rb << 11) | (40 << 1));
 }
 
 sub write_mov_ri($$)
@@ -255,12 +274,24 @@ sub reg_plus_reg($$@)
 {
     my ($ra, $rb, @trashed) = @_;
 
-    # addi $ra, r1, 0
-    write_add_ri($ra, 1, 0);
-    # li $rb, 32
-    write_mov_ri($rb, 32);
-
-    return $ra
+    if ($ra) {
+        # addi $ra, r1, 0
+        write_add_ri($ra, 1, 0);
+        # li $rb, 32
+        write_mov_ri($rb, 32);
+        if (grep $_ == $ra, @trashed) {
+            return -1;
+        }
+        return $ra;
+    }
+    else {
+        # addi $rb, r1, 32
+        write_add_ri($rb, 1, 32);
+        if (grep $_ == $rb, @trashed) {
+            return -1;
+        }
+        return $rb;
+    }
 }
 
 sub reg_plus_imm($$@)
@@ -327,6 +358,12 @@ sub gen_one_insn($$)
             # which is expected to be a call to a function which emits
             # the code to set up the base register and returns the
             # number of the base register.
+
+            # If you don't know that a basereg is going to be
+            # trashed or not, then just have it cleared by setting
+            # makezero to true.
+            set_num("makezero", 0);
+
             # Default alignment requirement for ARM is 4 bytes,
             # we use 16 for Aarch64, although often unnecessary and overkill.
             align(16);
@@ -343,7 +380,13 @@ sub gen_one_insn($$)
             # $basereg -1 means the basereg was a target of a load
             # (and so it doesn't contain a memory address after the op)
             if ($basereg != -1) {
-                write_mov_ri($basereg, 0);
+                if (get_num("makezero")) {
+                    # This is set to true if we don't know that the
+                    # base reg is still a memory related address.
+                    write_mov_ri($basereg, 0);
+                } else {
+                    write_subf_r($basereg, 1, $basereg);
+                }
             }
         }
         return;
