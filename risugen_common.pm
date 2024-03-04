@@ -28,7 +28,7 @@ BEGIN {
         open_bin close_bin
         set_endian big_endian
         insn32 insn16 $bytecount
-        progress_start progress_update progress_end
+        progress_start progress_update progress_end progress_show
         eval_with_fields is_pow_of_2 sextract ctz
         dump_insn_details
         $OP_COMPARE
@@ -102,31 +102,43 @@ sub insn16($)
 my $lastprog;
 my $proglen;
 my $progmax;
+my $progress = 0;
+
+sub progress_show()
+{
+    $progress = 1;
+}
 
 sub progress_start($$)
 {
-    ($proglen, $progmax) = @_;
-    $proglen -= 2; # allow for [] chars
-    $| = 1;        # disable buffering so we can see the meter...
-    print "[" . " " x $proglen . "]\r";
-    $lastprog = 0;
+    if ($progress) {
+        ($proglen, $progmax) = @_;
+        $proglen -= 2; # allow for [] chars
+        $| = 1;        # disable buffering so we can see the meter...
+        print "[" . " " x $proglen . "]\r";
+        $lastprog = 0;
+    }
 }
 
 sub progress_update($)
 {
-    # update the progress bar with current progress
-    my ($done) = @_;
-    my $barlen = int($proglen * $done / $progmax);
-    if ($barlen != $lastprog) {
-        $lastprog = $barlen;
-        print "[" . "-" x $barlen . " " x ($proglen - $barlen) . "]\r";
+    if ($progress) {
+        # update the progress bar with current progress
+        my ($done) = @_;
+        my $barlen = int($proglen * $done / $progmax);
+        if ($barlen != $lastprog) {
+            $lastprog = $barlen;
+            print "[" . "-" x $barlen . " " x ($proglen - $barlen) . "]\r";
+        }
     }
 }
 
 sub progress_end()
 {
-    print "[" . "-" x $proglen . "]\n";
-    $| = 0;
+    if ($progress) {
+        print "[" . "-" x $proglen . "]\n";
+        $| = 0;
+    }
 }
 
 sub eval_with_fields($$$$$) {
