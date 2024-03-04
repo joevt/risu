@@ -18,7 +18,6 @@
 #
 #   Versions:
 #
-#     P1-       Instruction introduced in POWER Architecture and dropped in later architectures. # Not included.
 #     P1        Instruction introduced in POWER Architecture.
 #     P2        Instruction introduced in POWER2 Architecture.
 #     PPC       Instruction introduced in PowerPC Architecture prior to v2.00.
@@ -117,10 +116,14 @@
 #
 #   Custom groups: not from the PowerPC ISA document
 #
-#     AltiVec  Instruction supported in all CPUs that support vector instructions.
-#     Optional Instruction not defined in many/all? 32-bit PowerPC CPUs.
-#     PPC64    Instruction only defined for 64-bit PowerPC CPUs.
-#     Skip     Ignore this instruction.
+#     P0        Instruction introduced in POWER Architecture and dropped in later architectures.
+#     MPC601    Instruction introduced in POWER Architecture and dropped in later architectures but included in the MPC601.
+#     Not601    Instruction not implemented by the MPC601.
+#     Not750    Instruction not implemented by the MPC750.
+#     AltiVec   Instruction supported in all CPUs that support vector instructions.
+#     Optional  Instruction not defined in many/all? 32-bit PowerPC CPUs.
+#     PPC64     Instruction only defined for 64-bit PowerPC CPUs.
+#     Skip      Ignore this instruction.
 #
 # Encodings:
 #
@@ -881,7 +884,7 @@ FNMSUBSd PPC64LE 111011 frt:5 fra:5 frb:5 frc:5 111101
 FRE PPC64LE 111111 frt:5 00000 frb:5 00000110000
 FREd PPC64LE 111111 frt:5 00000 frb:5 00000110001
 
-@ format:A, book:I, page:169, Floating-Point, PPC, fres[.] # Floating Reciprocal Estimate Single
+@ format:A, book:I, page:169, Floating-Point, PPC, Not601, fres[.] # Floating Reciprocal Estimate Single
 FRES PPC64LE 111011 frt:5 00000 frb:5 00000110000
 FRESd PPC64LE 111011 frt:5 00000 frb:5 00000110001
 
@@ -905,7 +908,7 @@ FRIZd PPC64LE 111111 frt:5 00000 frb:5 01101 010001
 FRSP PPC64LE 111111 frt:5 00000 frb:5 00000011000
 FRSPd PPC64LE 111111 frt:5 00000 frb:5 00000011001
 
-@ format:A, book:I, page:170, Floating-Point, PPC, frsqrte[.] # Floating Reciprocal Square Root Estimate
+@ format:A, book:I, page:170, Floating-Point, PPC, Not601, frsqrte[.] # Floating Reciprocal Square Root Estimate
 FRSQRTE PPC64LE 111111 frt:5 00000 frb:5 00000110100
 FRSQRTEd PPC64LE 111111 frt:5 00000 frb:5 00000110101
 
@@ -913,15 +916,15 @@ FRSQRTEd PPC64LE 111111 frt:5 00000 frb:5 00000110101
 FRSQRTES PPC64LE 111011 frt:5 00000 frb:5 00000110100
 FRSQRTESd PPC64LE 111011 frt:5 00000 frb:5 00000110101
 
-@ format:A, book:I, page:184, Floating-Point, PPC, fsel[.] # Floating Select
+@ format:A, book:I, page:184, Floating-Point, PPC, Not601, fsel[.] # Floating Select
 FSEL PPC64LE 111111 frt:5 fra:5 frb:5 frc:5 101110
 FSELd PPC64LE 111111 frt:5 fra:5 frb:5 frc:5 101111
 
-@ format:A, book:I, page:169, Floating-Point, P2, Optional, fsqrt[.] # Floating Square Root
+@ format:A, book:I, page:169, Floating-Point, P2, Not601, Not750, Optional, fsqrt[.] # Floating Square Root
 FSQRT PPC64LE 111111 frt:5 00000 frb:5 00000101100
 FSQRTd PPC64LE 111111 frt:5 00000 frb:5 00000101101
 
-@ format:A, book:I, page:169, Floating-Point, PPC, Optional, fsqrts[.] # Floating Square Root Single
+@ format:A, book:I, page:169, Floating-Point, PPC, Not601, Not750, Optional, fsqrts[.] # Floating Square Root Single
 FSQRTS PPC64LE 111011 frt:5 00000 frb:5 00000101100
 FSQRTSd PPC64LE 111011 frt:5 00000 frb:5 00000101101
 
@@ -1447,7 +1450,7 @@ MFOCRF PPC64LE 011111 rt:5 1 fxm:8 000000100110 \
 @ format:XFX, book:I, page:129, Fixed-Point, book:III, page:1184, Fixed-Point, P1, O, Skip, mfspr # Move From Special Purpose Register
 MFSPR PPC64LE 011111 a:15 01010100110
 
-@ format:XFX, book:II, page:1104, Time_Base, PPC, Skip, mftb # Move From Time Base
+@ format:XFX, book:II, page:1104, Time_Base, PPC, Not601, Skip, mftb # Move From Time Base
 MFTB PPC64LE 011111 a:15 01011100110
 
 @ format:VX, book:I, page:501, Vector, v2.03, AltiVec, mfvscr # Move From Vector Status and Control Register
@@ -2111,7 +2114,7 @@ STFDX PPC64LE 011111 frs:5 ra:5 rb:5 10110101110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
 
-@ format:X, book:I, page:162, Floating-Point, PPC, stfiwx # Store Floating-Point as Integer Word Indexed
+@ format:X, book:I, page:162, Floating-Point, PPC, Not601, stfiwx # Store Floating-Point as Integer Word Indexed
 STFIWX PPC64LE 011111 fra:5 ra:5 rb:5 11110101110 \
 !constraints { $ra != 1 && $rb != 1 && $ra != 13 && $rb != 13 && $ra != $rb; } \
 !memory { reg_plus_reg($ra, $rb); }
@@ -2438,7 +2441,7 @@ TLBIE PPC64LE 011111 a:5 0 b:9 01001100100
 @ format:X, book:III, page:1250, Storage_Control, v2.03, P, _64, Skip, tlbiel # TLB Invalidate Entry Local
 TLBIEL PPC64LE 011111 a:5 0 b:9 01000100100
 
-@ format:X, book:III, page:1254, Storage_Control, PPC, HV, P, Skip, tlbsync # TLB Synchronize
+@ format:X, book:III, page:1254, Storage_Control, PPC, Not601, HV, P, Skip, tlbsync # TLB Synchronize
 TLBSYNC PPC64LE 01111100000000000000010001101100
 
 @ format:X, book:I, page:97, Fixed-Point, P1, Skip, tw # Trap Word
@@ -4382,3 +4385,217 @@ XXSPLTIW PPC64LE 0000010100000000 a:16 100000 b:5 0011 c:17
 
 @ format:XX2, book:I, page:1003, Vector-Scalar_Extension, v2.06, xxspltw # VSX Vector Splat Word
 XXSPLTW PPC64LE 111100 t:5 000 uim:2 b:5 010100100 bx:1 tx:1
+
+###############################################################################
+# MPC601 specific instructions
+###############################################################################
+
+@ format:XO, Fixed-Point, P0, MPC601, abs # Absolute
+ABS PPC64LE 31:6 rt:5 ra:5 0:5 0:1 360:9 0:1 \
+!constraints { $rt != 1 && $rt != 1 && $ra != 1 && $ra != 13; }
+ABSd PPC64LE 31:6 rt:5 ra:5 0:5 0:1 360:9 1:1 \
+!constraints { $rt != 1 && $rt != 1 && $ra != 1 && $ra != 13; }
+ABSo PPC64LE 31:6 rt:5 ra:5 0:5 1:1 360:9 0:1 \
+!constraints { $rt != 1 && $rt != 1 && $ra != 1 && $ra != 13; }
+ABSod PPC64LE 31:6 rt:5 ra:5 0:5 1:1 360:9 1:1 \
+!constraints { $rt != 1 && $rt != 1 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, clcs # Cache Line Compute Size
+CLCS PPC64LE 31:6 rt:5 ra:5 0:5 531:10 0:1 \
+!constraints { $rt != 1 && $rt != 13; }
+
+@ format:XO, Fixed-Point, P0, MPC601, div # Divide
+DIV PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 331:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DIVd PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 331:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DIVo PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 331:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DIVod PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 331:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:XO, Fixed-Point, P0, MPC601, divs # Divide Short
+DIVS PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 363:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DIVSd PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 363:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DIVSo PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 363:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DIVSod PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 363:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:XO, Fixed-Point, P0, MPC601, doz # Difference or Zero
+DOZ PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 264:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DOZd PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 264:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DOZo PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 264:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+DOZod PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 264:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:D, Fixed-Point, P0, MPC601, dozi # Difference or Zero Immediate
+DOZI PPC64LE 9:6 rt:5 ra:5 imm:16 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, lscbx # Load String and Compare Byte Indexed
+LSCBX PPC64LE 31:6 rt:5 ra:5 rb:5 277:10 0:1 \
+!constraints { \
+    my $nb = irand(0x7f); \
+    set_num("nb", $nb | (irand(0xff) << 16)); \
+    my $regs = regs_wrapped($rt, $nb); \
+    $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regs & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
+} \
+!memory { \
+    write_mov_ri($ra, get_num("nb")); \
+    insn32((31 << 26) | ($ra << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1)); \
+    reg_plus_reg($ra, $rb); \
+}
+LSCBXd PPC64LE 31:6 rt:5 ra:5 rb:5 277:10 1:1 \
+!constraints { \
+    my $nb = irand(0x7f); \
+    set_num("nb", $nb | (irand(0xff) << 16)); \
+    my $regs = regs_wrapped($rt, $nb); \
+    $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13 && $ra != $rb && ($regs & ((1<<(31-1)) | (1<<(31-13)))) == 0; \
+} \
+!memory { \
+    write_mov_ri($ra, get_num("nb")); \
+    insn32((31 << 26) | ($ra << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1)); \
+    reg_plus_reg($ra, $rb); \
+}
+
+@ format:X, Fixed-Point, P0, MPC601, maskg # Mask Generate
+MASKG PPC64LE 31:6 rs:5 ra:5 rb:5 29:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+MASKGd PPC64LE 31:6 rs:5 ra:5 rb:5 29:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, maskir # Mask Insert from Register
+MASKIR PPC64LE 31:6 rs:5 ra:5 rb:5 541:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+MASKIRd PPC64LE 31:6 rs:5 ra:5 rb:5 541:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:XO, Fixed-Point, P0, MPC601, mul # Multiply
+MUL PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 107:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+MULd PPC64LE 31:6 rt:5 ra:5 rb:5 0:1 107:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+MULo PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 107:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+MULod PPC64LE 31:6 rt:5 ra:5 rb:5 1:1 107:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:XO, Fixed-Point, P0, MPC601, nabs # Negative Absolute
+NABS PPC64LE 31:6 rt:5 ra:5 0:5 0:1 488:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13; }
+NABSd PPC64LE 31:6 rt:5 ra:5 0:5 0:1 488:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13; }
+NABSo PPC64LE 31:6 rt:5 ra:5 0:5 1:1 488:9 0:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13; }
+NABSod PPC64LE 31:6 rt:5 ra:5 0:5 1:1 488:9 1:1 \
+!constraints { $rt != 1 && $rt != 13 && $ra != 1 && $ra != 13; }
+
+@ format:M, Fixed-Point, P0, MPC601, rlmi # Rotate Left then Mask Insert
+RLMI PPC64LE 22:6 rs:5 ra:5 rb:5 mb:5 me:5 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+RLMId PPC64LE 22:6 rs:5 ra:5 rb:5 mb:5 me:5 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, rrib # Rotate Right and Insert Bit
+RRIB PPC64LE 31:6 rs:5 ra:5 rb:5 537:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+RRIBd PPC64LE 31:6 rs:5 ra:5 rb:5 537:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sle # Shift Left Extended
+SLE PPC64LE 31:6 rs:5 ra:5 rb:5 153:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SLEd PPC64LE 31:6 rs:5 ra:5 rb:5 153:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sleq # Shift Left Extended with MQ
+SLEQ PPC64LE 31:6 rs:5 ra:5 rb:5 217:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SLEQd PPC64LE 31:6 rs:5 ra:5 rb:5 217:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sliq # Shift Left Immediate with MQ
+SLIQ PPC64LE 31:6 rs:5 ra:5 sh:5 184:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+SLIQd PPC64LE 31:6 rs:5 ra:5 sh:5 184:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, slliq # Shift Left Long Immediate with MQ
+SLLIQ PPC64LE 31:6 rs:5 ra:5 sh:5 248:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+SLLIQd PPC64LE 31:6 rs:5 ra:5 sh:5 248:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sllq # Shift Left Long with MQ
+SLLQ PPC64LE 31:6 rs:5 ra:5 rb:5 216:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SLLQd PPC64LE 31:6 rs:5 ra:5 rb:5 216:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, slq # Shift Left with MQ
+SLQ PPC64LE 31:6 rs:5 ra:5 rb:5 152:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SLQd PPC64LE 31:6 rs:5 ra:5 rb:5 152:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sraiq # Shift Right Algebraic Immediate with MQ
+SRAIQ PPC64LE 31:6 rs:5 ra:5 sh:5 952:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+SRAIQd PPC64LE 31:6 rs:5 ra:5 sh:5 952:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sraq # Shift Right Algebraic with MQ
+SRAQ PPC64LE 31:6 rs:5 ra:5 rb:5 920:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SRAQd PPC64LE 31:6 rs:5 ra:5 rb:5 920:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sre # Shift Right Extended
+SRE PPC64LE 31:6 rs:5 ra:5 rb:5 665:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SREd PPC64LE 31:6 rs:5 ra:5 rb:5 665:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, srea # Shift Right Extended Algebraic
+SREA PPC64LE 31:6 rs:5 ra:5 rb:5 921:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SREAd PPC64LE 31:6 rs:5 ra:5 rb:5 921:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sreq # Shift Right Extended with MQ
+SREQ PPC64LE 31:6 rs:5 ra:5 rb:5 729:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SREQd PPC64LE 31:6 rs:5 ra:5 rb:5 729:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, sriq # Shift Right Immediate with MQ
+SRIQ PPC64LE 31:6 rs:5 ra:5 sh:5 696:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+SRIQd PPC64LE 31:6 rs:5 ra:5 sh:5 696:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, srliq # Shift Right Long Immediate with MQ
+SRLIQ PPC64LE 31:6 rs:5 ra:5 sh:5 760:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+SRLIQd PPC64LE 31:6 rs:5 ra:5 sh:5 760:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, srlq # Shift Right Long with MQ
+SRLQ PPC64LE 31:6 rs:5 ra:5 rb:5 728:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SRLQd PPC64LE 31:6 rs:5 ra:5 rb:5 728:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+@ format:X, Fixed-Point, P0, MPC601, srq # Shift Right with MQ
+SRQ PPC64LE 31:6 rs:5 ra:5 rb:5 664:10 0:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+SRQd PPC64LE 31:6 rs:5 ra:5 rb:5 664:10 1:1 \
+!constraints { $rs != 1 && $rs != 13 && $ra != 1 && $ra != 13 && $rb != 1 && $rb != 13; }
+
+###############################################################################
