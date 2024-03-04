@@ -136,6 +136,11 @@ sub write_random_regdata()
         insn32((0x13 << 26) | ($i << 21) | ($i << 16) | ($i << 11) | (0xc1 << 1) | 0);
     }
 
+    # li r23, 0
+    write_mov_ri(23, 0);
+    # mtxer r23 ; zero the xer register
+    insn32((31 << 26) | (23 << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1));
+
     # general purpose registers
     for (my $i = 0; $i < 32; $i++) {
         if ($i == 1 || $i == 13) {
@@ -147,10 +152,6 @@ sub write_random_regdata()
 
 sub clear_vr_registers()
 {
-    # li r23, 0
-    write_mov_ri(23, 0);
-    # mtxer r23 ; zero the xer register
-    insn32((31 << 26) | (23 << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1));
     #li r23, -1
     write_mov_ri(23, -1);
     # mtspr vrsave, r23
