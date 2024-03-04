@@ -14,40 +14,40 @@
 #ifndef RISU_REGINFO_PPC64_H
 #define RISU_REGINFO_PPC64_H
 
-#if __LP64__
+#if defined(__LP64__) && !defined(DPPC)
+    typedef uint64_t arch_ptr_t;
     typedef uint64_t reg_t;
     #define PRIx "16" PRIx64
+    #define PRIxARCHPTR PRIx32
 #else
+    typedef uint32_t arch_ptr_t;
     typedef uint32_t reg_t;
     #define PRIx "8" PRIx32
+    #define PRIxARCHPTR PRIx32
 #endif
 
-#ifdef __APPLE__
-    #define NIP     32
-    #define MSR     33
-    #define origR3  34
-    #define CTR     35
-    #define LNK     36
-    #define XER     37
-    #define CCR     38
-    #define MQ      39
-    #define TRAP    40
-    #define DAR     41
-    #define DSISR   42
-    #define RESULT  43
-    #define DSCR    44
-    #define NGREG   45
+enum {
+    risu_NIP = 32,
+    risu_MSR,
+    risu_CTR,
+    risu_LNK,
+    risu_XER,
+    risu_CCR,
+    risu_MQ,
+    risu_DAR,
+    risu_DSISR,
+    risu_NGREG,
+};
 
-    typedef reg_t gregset_t[NGREG];
+typedef reg_t risu_gregset_t[risu_NGREG];
 
-    typedef struct {
-        uint32_t vrregs[32][4];
-        uint32_t vscr[4];
-        uint32_t vrsave;
-        uint32_t vrsave2;
-        uint32_t save_vrvalid;
-    } vrregset_t;
-#endif
+typedef struct {
+    uint32_t vrregs[32][4];
+    uint32_t vscr[4];
+    uint32_t vrsave;
+    uint32_t vrsave2;
+    uint32_t save_vrvalid;
+} risu_vrregset_t;
 
 struct reginfo {
     uint32_t second_prev_insn;
@@ -55,11 +55,11 @@ struct reginfo {
     uint32_t faulting_insn;
     uint32_t next_insn;
     uint32_t nip;
-    gregset_t gregs;
-    uint64_t fpregs[32];
+    risu_gregset_t gregs;
+    uint64_t fpregs[32] __attribute__((packed));
     reg_t fpscr;
 #ifdef VRREGS
-    vrregset_t vrregs;
+    risu_vrregset_t vrregs;
 #endif
 #ifdef SAVESTACK
     uint8_t stack[256];

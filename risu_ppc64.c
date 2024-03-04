@@ -14,40 +14,57 @@
 #include <sys/user.h>
 
 #include "risu.h"
+#ifdef DPPC
+    #include "ppcemu.h"
+#endif
 
 void advance_pc(void *vuc)
 {
+#if defined(DPPC)
+    //We don't need to change the pc because ppctest-risu treats illegal ops as normal ops.
+    //ppc_state.pc += 4;
+#elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *) vuc;
-#ifndef __APPLE__
-    uc->uc_mcontext.regs->nip += 4;
-#else
     uc->uc_mcontext->ss.srr0 += 4;
-#endif
-}
-
-uintptr_t get_uc_pc(void *vuc, void *siaddr)
-{
+#else
     ucontext_t *uc = (ucontext_t *) vuc;
-#ifndef __APPLE__
-    return uc->uc_mcontext.regs->nip;
-#else
+    uc->uc_mcontext.regs->nip += 4;
+#endif
+}
+
+arch_ptr_t get_uc_pc(void *vuc, void *siaddr)
+{
+#if defined(DPPC)
+    return ppc_state.pc;
+#elif defined(__APPLE__)
+    ucontext_t *uc = (ucontext_t *) vuc;
     return uc->uc_mcontext->ss.srr0;
-#endif
-}
-
-void set_ucontext_paramreg(void *vuc, uint64_t value)
-{
-    ucontext_t *uc = vuc;
-#ifndef __APPLE__
-    uc->uc_mcontext.gp_regs[0] = value;
 #else
-    uc->uc_mcontext->ss.r0 = value;
+    ucontext_t *uc = (ucontext_t *) vuc;
+    return uc->uc_mcontext.regs->nip;
 #endif
 }
 
-uint64_t get_reginfo_paramreg(struct reginfo *ri)
+void set_ucontext_paramreg(void *vuc, arch_ptr_t value)
 {
+#if defined(DPPC)
+    ppc_state.gpr[0] = (uint32_t)value;
+#elif defined(__APPLE__)
+    ucontext_t *uc = vuc;
+    uc->uc_mcontext->ss.r0 = value;
+#else
+    ucontext_t *uc = vuc;
+    uc->uc_mcontext.gp_regs[0] = value;
+#endif
+}
+
+arch_ptr_t get_reginfo_paramreg(struct reginfo *ri)
+{
+#if defined(DPPC)
+    return ppc_state.gpr[0];
+#else
     return ri->gregs[0];
+#endif
 }
 
 RisuOp get_risuop(struct reginfo *ri)
@@ -59,7 +76,40 @@ RisuOp get_risuop(struct reginfo *ri)
     return (RisuOp)((key != risukey) ? OP_SIGILL : op);
 }
 
-uintptr_t get_pc(struct reginfo *ri)
+arch_ptr_t get_pc(struct reginfo *ri)
 {
+#if defined(DPPC)
+   return ppc_state.pc;
+#else
    return ri->nip;
+#endif
 }
+
+bool get_arch_big_endian() {
+#if defined(DPPC) || defined(__BIG_ENDIAN__)
+    return true;
+#else
+    return false;
+#endif
+}
+
+uint32_t arch_to_host_32(uint32_t val) {
+#if (defined(DPPC) || defined(__BIG_ENDIAN__)) == defined(__BIG_ENDIAN__)
+    return val;
+#else
+    return BYTESWAP_32(val);
+#endif
+}
+
+#if defined(DPPC)
+void ppc_exception_handler_risu(Except_Type exception_type, uint32_t srr1_bits) {
+    arch_siginfo_t si;
+    bzero(&si, sizeof(si));
+    si.si_addr = (void*)(size_t)ppc_state.pc;
+    if (exception_type == Except_Type::EXC_PROGRAM)
+        sig_handler(SIGILL, &si, NULL);
+    else {
+        sig_handler(SIGBUS, &si, NULL);
+    }
+}
+#endif

@@ -16,11 +16,19 @@
 
 #include <inttypes.h>
 #include <stdint.h>
-#include <ucontext.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <stdbool.h>
 
+#ifdef NO_SIGNAL
+    typedef struct {
+        void *si_addr;
+    } arch_siginfo_t;
+#else
+    #include <signal.h>
+    #include <ucontext.h>
+    typedef siginfo_t arch_siginfo_t;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,10 +60,12 @@ extern "C" {
 #endif
 
 typedef void entrypoint_fn(void);
+typedef void (sig_handler_fn) (int, arch_siginfo_t *si, void *);
 
 extern uintptr_t image_start_address;
 extern entrypoint_fn *image_start;
 extern size_t image_size;
+extern sig_handler_fn *sig_handler;
 void do_image();
 
 /* Ops code under test can request from risu: */
@@ -104,7 +114,7 @@ typedef struct {
     uint32_t magic;
     uint32_t size;
     int32_t risu_op;
-    uintptr_t pc;
+    arch_ptr_t pc;
 } trace_header_t;
 
 #define RISU_MAGIC  ((uint32_t)(('R' << 24) | ('I' << 16) | ('S' << 8) | 'U'))
@@ -124,16 +134,15 @@ void send_response_byte(int sock, int resp);
 void advance_pc(void *uc);
 
 /* Return the PC from a ucontext */
-uintptr_t get_uc_pc(void *uc, void *siaddr);
+arch_ptr_t get_uc_pc(void *uc, void *siaddr);
 
 /* Set the parameter register in a ucontext_t to the specified value.
- * (32-bit targets can ignore high 32 bits.)
  * vuc is a ucontext_t* cast to void*.
  */
-void set_ucontext_paramreg(void *vuc, uint64_t value);
+void set_ucontext_paramreg(void *vuc, arch_ptr_t value);
 
 /* Return the value of the parameter register from a reginfo. */
-uint64_t get_reginfo_paramreg(struct reginfo *ri);
+arch_ptr_t get_reginfo_paramreg(struct reginfo *ri);
 
 /*
  * Return the risu operation number we have been asked to do,
@@ -142,13 +151,13 @@ uint64_t get_reginfo_paramreg(struct reginfo *ri);
 RisuOp get_risuop(struct reginfo *ri);
 
 /* Return the PC from a reginfo */
-uintptr_t get_pc(struct reginfo *ri);
+arch_ptr_t get_pc(struct reginfo *ri);
 
 /* initialize structure from a ucontext */
-void reginfo_init(struct reginfo *ri, ucontext_t *uc, void *siaddr);
+void reginfo_init(struct reginfo *ri, void *uc, void *siaddr);
 
 /* update a ucontext */
-void reginfo_update(struct reginfo *ri, ucontext_t *uc, void *siaddr);
+void reginfo_update(struct reginfo *ri, void *uc, void *siaddr);
 
 /* return 1 if structs are equal, 0 otherwise. */
 int reginfo_is_eq(struct reginfo *r1, struct reginfo *r2);
@@ -161,6 +170,22 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f);
 
 /* return size of reginfo */
 int reginfo_size(struct reginfo *ri);
+
+/* Return true if the architecture is big_endian */
+bool get_arch_big_endian();
+
+/* Return architecture starting address of image */
+arch_ptr_t get_arch_start_address();
+
+/* Return pointer to architecture memory */
+void * get_arch_memory(arch_ptr_t arch_memblock);
+
+/* Byte swap if necessary */
+uint32_t arch_to_host_32(uint32_t value);
+
+/* Byte swap reginfo */
+void reginfo_host_to_arch(struct reginfo *ri);
+void reginfo_arch_to_host(struct reginfo *ri);
 
 #ifdef __cplusplus
 }
