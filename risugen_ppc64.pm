@@ -226,7 +226,7 @@ sub get_offset()
     # end, to (more than) allow for the worst case data transfer, which is
     # 16 * 64 bit regs
     my $offset = (irand(2048 - 512) + 256) & ~($alignment_restriction - 1);
-    return $offset
+    return $offset;
 }
 
 sub reg($@)
