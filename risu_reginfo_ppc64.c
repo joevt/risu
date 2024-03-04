@@ -501,6 +501,10 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
         return 0;
     }
 
+    if (m->gregs[risu_CTR] != a->gregs[risu_CTR]) {
+        return 0;
+    }
+
     if (m->gregs[risu_CCR] != a->gregs[risu_CCR]) {
         uint32_t mask = ccr_mask;
         if ((m->prev_insn & 0xfc6007bf) == 0xfc000000) { /* fcmpo or fcmpu */
@@ -1531,6 +1535,11 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
             fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n",
                     m->gregs[i], a->gregs[i]);
         }
+    }
+
+    if (m->gregs[risu_CTR] != a->gregs[risu_CTR]) {
+        fprintf(f, "Mismatch: ctr ");
+        fprintf(f, "m: [%0" PRIx "] != a: [%0" PRIx "]\n", m->gregs[risu_CTR], a->gregs[risu_CTR]);
     }
 
     if (m->gregs[risu_LNK] - m->gregs[risu_NIP] != a->gregs[risu_LNK] - a->gregs[risu_NIP]) {
