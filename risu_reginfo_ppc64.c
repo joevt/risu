@@ -40,6 +40,11 @@
 #endif
 #include "endianswap.h"
 
+#if !defined(DPPC) && !defined(__APPLE__)
+    static uint32_t gregs_mask = ~((1 << (31-1)) | (1 << (31-13))); /* Bit mask of GP registers to compare. */ /* ignore r1 and r13 */
+#else
+    static uint32_t gregs_mask = ~(1 << (31-1)); /* Bit mask of GP registers to compare. */ /* ignore r1 */
+#endif
 static uint32_t ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
 static uint32_t fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
 static uint32_t fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
@@ -73,11 +78,13 @@ static const struct option extra_opts[] = {
     {"fpregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 2 },
     {"vrregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 3 },
     {"fp_opts",     required_argument, NULL, FIRST_ARCH_OPT + 4 },
+    {"gregs_mask" , required_argument, NULL, FIRST_ARCH_OPT + 5 },
     {0, 0, 0, 0}
 };
 
 const struct option * const arch_long_opts = &extra_opts[0];
 const char * const arch_extra_help =
+    "  --gregs_mask=MASK  Mask of gregs to compare\n"
     "  --fpregs_mask=MASK Mask of fpregs to compare\n"
     "  --vrregs_mask=MASK Mask of vrregs to compare\n"
     "  --ccr_mask=MASK    Mask of CCR bits to compare\n"
@@ -87,7 +94,7 @@ const char * const arch_extra_help =
 
 void process_arch_opt(int opt, const char *arg)
 {
-    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 4);
+    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 5);
     uint32_t val = (uint32_t)strtoul(arg, 0, 16);
     switch (opt - FIRST_ARCH_OPT) {
         case 0: ccr_mask    = val; break;
@@ -95,6 +102,7 @@ void process_arch_opt(int opt, const char *arg)
         case 2: fpregs_mask = val; break;
         case 3: vrregs_mask = val; break;
         case 4: fp_opts     = val; break;
+        case 5: gregs_mask  = val; break;
     }
 }
 
@@ -337,6 +345,23 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
     uc->uc_mcontext.gp_regs[CR] = ri->gregs[risu_CCR];
 #endif
 
+    int i;
+    for (i = 0; i < 32; i++) {
+        if ((1 << (31-i)) & ~gregs_mask) {
+            continue;
+        }
+#if defined(DPPC)
+        ppc_state.gpr[i] = ri->gregs[i];
+#elif defined(__APPLE__)
+        if (sizeof(uc->uc_mcontext->ss.r0) == 8)
+            ((uint64_t*)(&uc->uc_mcontext->ss.r0))[i] = ri->gregs[i];
+        else
+            ((uint32_t*)(&uc->uc_mcontext->ss.r0))[i] = ri->gregs[i];
+#else
+        uc->uc_mcontext.gp_regs[i] = ri->gregs[i];
+#endif
+    }
+
 #if defined(DPPC)
     memcpy(ppc_state.fpr, ri->fpregs, 32 * sizeof(double));
     ppc_state.fpscr = ri->fpscr;
@@ -441,9 +466,9 @@ uint64_t normalize(uint64_t n) {
 /* reginfo_is_eq: compare the reginfo structs, returns nonzero if equal */
 int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 {
-    uint32_t gregs_mask = ~((1 << (31-1)) | (1 << (31-13))); /* ignore r1 and r13 */
+    uint32_t local_gregs_mask = gregs_mask;
     if (get_risuop(a) == OP_SIGILL && (a->next_insn & (0xe << 26)) == (0xe << 26)) {
-        gregs_mask &= ~(1 << (31-((a->next_insn >> 21) & 31)));
+        local_gregs_mask &= ~(1 << (31-((a->next_insn >> 21) & 31)));
     }
 
     int rt = (m->prev_insn >> 21) & 31;
@@ -454,7 +479,7 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     int i;
     for (i = 0; i < 32; i++) {
         if (m->gregs[i] != a->gregs[i]) {
-            if ((1 << (31-i)) & ~gregs_mask) {
+            if ((1 << (31-i)) & ~local_gregs_mask) {
                 /* a->gregs[i] = m->fpregs[i]; */
             } else {
                 return 0;
@@ -1487,7 +1512,7 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
 {
     int i;
     for (i = 0; i < 32; i++) {
-        if (i == 1 || i == 13) {
+        if ((1 << (31-i)) & ~gregs_mask) {
             continue;
         }
 
