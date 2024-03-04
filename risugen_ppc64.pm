@@ -146,6 +146,11 @@ sub write_random_regdata()
     # mtctr r23 ; radomize the ctr register
     insn32((31 << 26) | (23 << 21) | ((9 & 31) << 16) | ((9 >> 5) << 11) | (467 << 1));
 
+    # li r23, random
+    write_mov_ri(23, irand(0xffffffff));
+    # mtmq r23 ; radomize the mq register
+    insn32((31 << 26) | (23 << 21) | ((0 & 31) << 16) | ((0 >> 5) << 11) | (467 << 1));
+
     # general purpose registers
     for (my $i = 0; $i < 32; $i++) {
         if ($i == 1 || $i == 13) {
