@@ -11,6 +11,8 @@
 
 /* Routines for the socket communication between master and apprentice. */
 
+#include "risu.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +22,6 @@
 #include <sys/uio.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
-#include "risu.h"
 
 int apprentice_connect(const char *hostname, int port)
 {
@@ -96,9 +96,9 @@ int master_connect(int port)
  */
 static void recv_bytes(int sock, void *pkt, int pktlen)
 {
-    char *p = pkt;
+    char *p = (char *)pkt;
     while (pktlen) {
-        int i = read(sock, p, pktlen);
+        int i = (int)read(sock, p, pktlen);
         if (i <= 0) {
             if (errno == EINTR) {
                 continue;
@@ -121,7 +121,7 @@ static void recv_and_discard_bytes(int sock, int pktlen)
         if (len > pktlen) {
             len = pktlen;
         }
-        i = read(sock, dumpbuf, len);
+        i = (int)read(sock, dumpbuf, len);
         if (i <= 0) {
             if (errno == EINTR) {
                 continue;
@@ -193,7 +193,7 @@ RisuResult send_data_pkt(int sock, void *pkt, int pktlen)
         perror("read failed");
         exit(EXIT_FAILURE);
     }
-    return resp;
+    return (RisuResult)resp;
 }
 
 RisuResult recv_data_pkt(int sock, void *pkt, int pktlen)

@@ -11,6 +11,7 @@
  *     based on Peter Maydell's risu_arm.c
  *****************************************************************************/
 
+#include "risu.h"
 #include <stdio.h>
 #include <signal.h>
 #include <ucontext.h>
@@ -20,16 +21,15 @@
 #include <assert.h>
 #include <sys/user.h>
 
-#include "risu.h"
 #include "risu_reginfo_ppc64.h"
 
 #define XER 37
 #define CCR 38
 
-static int ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
-static int fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
-static int fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
-static int vrregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
+static uint32_t ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
+static uint32_t fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
+static uint32_t fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
+static uint32_t vrregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
 
 static const struct option extra_opts[] = {
     {"ccr_mask"   , required_argument, NULL, FIRST_ARCH_OPT + 0 },
@@ -49,7 +49,7 @@ const char * const arch_extra_help =
 void process_arch_opt(int opt, const char *arg)
 {
     assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 3);
-    int val = strtoul(arg, 0, 16);
+    uint32_t val = (uint32_t)strtoul(arg, 0, 16);
     switch (opt - FIRST_ARCH_OPT) {
         case 0: ccr_mask    = val; break;
         case 1: fpscr_mask  = val; break;
@@ -64,8 +64,9 @@ void arch_init(void)
 
 void do_image()
 {
+    int i;
     uint8_t stack_bytes[32768];
-    for (int i = 0; i < sizeof(stack_bytes); i++)
+    for (i = 0; i < sizeof(stack_bytes); i++)
         stack_bytes[i] = i;
     image_start();
 }
