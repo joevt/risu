@@ -998,7 +998,7 @@ LD PPC64LE 111010 rt:5 ra:5 imm:14 00 \
 !constraints { $rt != 1 && $ra > 1 && $rt != 13 && $ra != 13 && $ra != $rt && $imm <= 8176; } \
 !memory { reg_plus_imm($ra, $imm << 2); }
 
-@ format:X, book:II, page:1092, Storage_Control, PPC, Skip, ldarx # Load Doubleword And Reserve Indexed
+@ format:X, book:II, page:1092, Storage_Control, PPC, PPC64, Skip, ldarx # Load Doubleword And Reserve Indexed
 LDARX PPC64LE 011111 a:15 00010101000
 
 @ format:X, book:II, page:1083, Storage_Control, v3.0, AMO, Skip, ldat # Load Doubleword ATomic
@@ -1525,7 +1525,7 @@ MTFSFId PPC64LE 111111 bf:3 000000 w:1 u:4 000100001101
 @ format:X, book:III, page:1185, Fixed-Point, P1, P, Skip, mtmsr # Move To MSR
 MTMSR PPC64LE 011111 a:5 0000 b:1 0000000100100100
 
-@ format:X, book:III, page:1186, Fixed-Point, PPC, P, Skip, mtmsrd # Move To MSR Doubleword
+@ format:X, book:III, page:1186, Fixed-Point, PPC, PPC64, P, Skip, mtmsrd # Move To MSR Doubleword
 MTMSRD PPC64LE 011111 a:5 0000 b:1 0000000101100100
 
 @ format:XFX, book:I, page:130, Fixed-Point, v2.01, mtocrf # Move To One Condition Register Field
@@ -1949,13 +1949,13 @@ SETNBCR PPC64LE 011111 a:10 0000001111000000
 @ format:X, book:III, page:1242, Storage_Control, v2.05, P, SR, Skip, slbfee. # SLB Find Entry ESID
 SLBFEED PPC64LE 011111 a:5 00000 b:5 11110100111
 
-@ format:X, book:III, page:1237, Storage_Control, PPC, P, Skip, slbia # SLB Invalidate All
+@ format:X, book:III, page:1237, Storage_Control, PPC, PPC64, P, Skip, slbia # SLB Invalidate All
 SLBIA PPC64LE 01111100 a:3 000000000001111100100
 
 @ format:X, book:III, page:1239, Storage_Control, v3.0B, P, Skip, slbiag # SLB Invalidate All Global
 SLBIAG PPC64LE 011111 a:5 00000 b:5 11010100100
 
-@ format:X, book:III, page:1234, Storage_Control, PPC, P, Skip, slbie # SLB Invalidate Entry
+@ format:X, book:III, page:1234, Storage_Control, PPC, PPC64, P, Skip, slbie # SLB Invalidate Entry
 SLBIE PPC64LE 0111110000000000 a:5 01101100100
 
 @ format:X, book:III, page:1236, Storage_Control, v3.0, P, Skip, slbieg # SLB Invalidate Entry Global
@@ -2063,7 +2063,7 @@ STDBRX PPC64LE 011111 rs:5 ra:5 rb:5 10100101000 \
 @ format:X, book:III, page:1175, Fixed-Point, v2.05, HV, Skip, stdcix # Store Doubleword Caching Inhibited Indexed
 STDCIX PPC64LE 011111 a:15 11111101010
 
-@ format:X, book:II, page:1092, Storage_Control, PPC, Skip, stdcx. # Store Doubleword Conditional Indexed
+@ format:X, book:II, page:1092, Storage_Control, PPC, PPC64, Skip, stdcx. # Store Doubleword Conditional Indexed
 STDCXD PPC64LE 011111 a:15 00110101101
 
 @ format:DS, book:I, page:62, Fixed-Point, PPC, PPC64, stdu # Store Doubleword with Update
