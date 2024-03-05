@@ -33,6 +33,9 @@ my $MAXALIGN = 64;
 
 my %num;
 
+my $unusableregs = 1<<(31-1);
+#my $unusableregs = 1<<(31-1) | 1<<(31-13);
+
 sub set_num($$)
 {
     my ($name, $n) = @_;
@@ -53,6 +56,21 @@ sub regs_wrapped($$)
     my $regswrapped = ($regs >> 32) | ($regs & 0xffffffff);
     set_num("regs", $regswrapped);
     return $regswrapped;
+}
+
+sub usable(@)
+{
+    my $regs = 0;
+    foreach my $reg (@_) {
+        $regs |= 1<<(31-$reg);
+    }
+    return (($regs & $unusableregs) == 0);
+}
+
+sub usable_wrapped($)
+{
+    my ($regs) = @_;
+    return (($regs & $unusableregs) == 0);
 }
 
 sub write_add_ri($$$)
@@ -172,10 +190,9 @@ sub write_random_regdata()
 
     # general purpose registers
     for (my $i = 0; $i < 32; $i++) {
-        if ($i == 1 || $i == 13) {
-            next;
+        if (usable($i)) {
+            write_mov_ri($i, irand(0xffffffff));
         }
-        write_mov_ri($i, irand(0xffffffff));
     }
 }
 
