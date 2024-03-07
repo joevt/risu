@@ -228,21 +228,79 @@ ANDId PPC64LE 011100 rs:5 ra:5 imm:16 \
 ANDISd PPC64LE 011101 rs:5 ra:5 imm:16 \
 !constraints { usable($rs, $ra) && $imm >= 0; }
 
-@ format:I, book:I, page:41, Branch, P1, Skip, b[l][a] # Branch
-B PPC64LE 010010 a:24 00
-Ba PPC64LE 010010 a:24 10
-Bl PPC64LE 010010 a:24 01
-Bla PPC64LE 010010 a:24 11
+@ format:I, book:I, page:41, Branch, P1, b[l] # Branch
+B PPC64LE 010010 bd:24 00 \
+!pre { \
+    $bd >>= 20; \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    update_insn("bd", $bd); \
+    branch_pre($bd, 24); \
+} \
+!post { \
+    branch_post($bd, 24); \
+}
+Bl PPC64LE 010010 bd:24 01 \
+!pre { \
+    $bd >>= 20; \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    update_insn("bd", $bd); \
+    branch_pre($bd, 24); \
+} \
+!post { \
+    branch_post($bd, 24); \
+}
 
-@ format:B, book:I, page:41, Branch, P1, CT, Skip, bc[l][a] # Branch Conditional
-BC PPC64LE 010000 a:24 00
-BCa PPC64LE 010000 a:24 10
-BCl PPC64LE 010000 a:24 01
-BCla PPC64LE 010000 a:24 11
+@ format:I, book:I, page:41, Branch, P1, Skip, b[l]a # Branch Absolute
+Ba PPC64LE 010010 bd:24 10
+Bla PPC64LE 010010 bd:24 11
 
-@ format:XL, book:I, page:42, Branch, P1, CT, Skip, bcctr[l] # Branch Conditional to Count Register
-BCCTR PPC64LE 010011 a:10 000 b:2 10000100000
-BCCTRl PPC64LE 010011 a:10 000 b:2 10000100001
+@ format:B, book:I, page:41, Branch, P1, CT, bc[l] # Branch Conditional
+BC PPC64LE 010000 bo:5 bi:5 bd:14 00 \
+!pre { \
+    $bd >>= 10; \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    update_insn("bd", $bd); \
+    branch_pre($bd, 14); \
+} \
+!post { \
+    branch_post($bd, 14); \
+}
+BCl PPC64LE 010000 bo:5 bi:5 bd:14 01 \
+!pre { \
+    $bd >>= 10; \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    update_insn("bd", $bd); \
+    branch_pre($bd, 14); \
+} \
+!post { \
+    branch_post($bd, 14); \
+}
+
+@ format:B, book:I, page:41, Branch, P1, CT, Skip, bc[l]a # Branch Conditional Absolute
+BCa PPC64LE 010000 bo:5 bi:5 bd:14 10
+BCla PPC64LE 010000 bo:5 bi:5 bd:14 11
+
+@ format:XL, book:I, page:42, Branch, P1, CT, bcctr[l] # Branch Conditional to Count Register
+BCCTR PPC64LE 010011 bo:5 bi:5 000 bh:2 10000100000 \
+!pre { \
+    my $bd = irand(15); \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    set_num("bd", $bd); \
+    branch_pre($bd, -1); \
+} \
+!post { \
+    branch_post(get_num("bd"), -1); \
+}
+BCCTRl PPC64LE 010011 bo:5 bi:5 000 bh:2 10000100001 \
+!pre { \
+    my $bd = irand(15); \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    set_num("bd", $bd); \
+    branch_pre($bd, -1); \
+} \
+!post { \
+    branch_post(get_num("bd"), -1); \
+}
 
 @ format:VX, book:I, page:483, Vector, v2.07, bcdadd. # Decimal Add Modulo
 BCDADDd PPC64LE 000100 vrt:5 vra:5 vrb:5 1 ps:1 000000001
@@ -289,13 +347,32 @@ BCDUSd PPC64LE 000100 vrt:5 vra:5 vrb:5 10010000001
 @ format:VX, book:I, page:500, Vector, v3.0, bcdutrunc. # Decimal Unsigned Truncate
 BCDUTRUNCd PPC64LE 000100 vrt:5 vra:5 vrb:5 10101000001
 
-@ format:XL, book:I, page:42, Branch, P1, CT, Skip, bclr[l] # Branch Conditional to Link Register
-BCLR PPC64LE 010011 a:10 000 b:2 00000100000
-BCLRl PPC64LE 010011 a:10 000 b:2 00000100001
+@ format:XL, book:I, page:42, Branch, P1, CT, bclr[l] # Branch Conditional to Link Register
+BCLR PPC64LE 010011 bo:5 bi:5 000 bh:2 00000100000 \
+!pre { \
+    my $bd = irand(15); \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    set_num("bd", $bd); \
+    branch_pre($bd, -2); \
+} \
+!post { \
+    branch_post(get_num("bd"), -2); \
+}
+
+BCLRl PPC64LE 010011 bo:5 bi:5 000 bh:2 00000100001 \
+!pre { \
+    my $bd = irand(15); \
+    $bd = ($bd >= 8) ? $bd - 16 : $bd + 1; \
+    set_num("bd", $bd); \
+    branch_pre($bd, -2); \
+} \
+!post { \
+    branch_post(get_num("bd"), -2); \
+}
 
 @ format:XL, book:I, page:43, Branch, v2.07, Skip, bctar[l] # Branch Conditional to Branch Target Address Register
-BCTAR PPC64LE 010011 a:10 000 b:2 10001100000
-BCTARl PPC64LE 010011 a:10 000 b:2 10001100001
+BCTAR PPC64LE 010011 bo:5 bi:5 000 bh:2 10001100000
+BCTARl PPC64LE 010011 bo:5 bi:5 000 bh:2 10001100001
 
 @ format:X, book:I, page:105, Fixed-Point, v2.06, bpermd # Bit Permute Doubleword
 BPERMD PPC64LE 011111 rs:5 ra:5 rb:5 00111111000 \
