@@ -347,6 +347,8 @@ sub gen_one_insn($$)
         my $fixedbitmask = $rec->{fixedbitmask};
         my $constraint = $rec->{blocks}{"constraints"};
         my $memblock = $rec->{blocks}{"memory"};
+        my $post = $rec->{blocks}{"post"};
+        my $pre = $rec->{blocks}{"pre"};
 
         $insn &= ~$fixedbitmask;
         $insn |= $fixedbits;
@@ -387,7 +389,19 @@ sub gen_one_insn($$)
             $basereg = eval_with_fields($insnname, \$insn, $rec, "memory", $memblock);
         }
 
+        if (defined $pre) {
+            # The hook for doing things before the instruction.
+            my $resultreg;
+            $resultreg = eval_with_fields($insnname, \$insn, $rec, "pre", $pre);
+        }
+
         insn32($insn);
+
+        if (defined $post) {
+            # The hook for doing things after emitting the instruction.
+            my $resultreg;
+            $resultreg = eval_with_fields($insnname, \$insn, $rec, "post", $post);
+        }
 
         if (defined $memblock) {
             # Clean up following a memory access instruction:
