@@ -123,7 +123,7 @@ sub gen_one_insn($$)
         if (defined $constraint) {
             # user-specified constraint: evaluate in an environment
             # with variables set corresponding to the variable fields.
-            my $v = eval_with_fields($insnname, $insn, $rec, "constraints", $constraint);
+            my $v = eval_with_fields($insnname, \$insn, $rec, "constraints", $constraint);
             if (!$v) {
                 $constraintfailures++;
                 if ($constraintfailures > 10000) {

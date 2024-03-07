@@ -418,7 +418,7 @@ sub gen_one_insn($$)
         if (defined $constraint) {
             # User-specified constraint: evaluate in an environment
             # with variables set corresponding to the variable fields.
-            my $v = eval_with_fields($insnname, $insn, $rec, "constraints", $constraint);
+            my $v = eval_with_fields($insnname, \$insn, $rec, "constraints", $constraint);
             if(!$v) {
                 $constraintfailures++;
                 if ($constraintfailures > 10000) {
@@ -442,7 +442,7 @@ sub gen_one_insn($$)
             # Default alignment requirement for ARM is 4 bytes,
             # we use 16 for Aarch64, although often unnecessary and overkill.
             align(16);
-            $basereg = eval_with_fields($insnname, $insn, $rec, "memory", $memblock);
+            $basereg = eval_with_fields($insnname, \$insn, $rec, "memory", $memblock);
         }
 
         insn32($insn);
@@ -450,7 +450,7 @@ sub gen_one_insn($$)
         if (defined $post) {
             # The hook for doing things after emitting the instruction.
             my $resultreg;
-            $resultreg = eval_with_fields($insnname, $insn, $rec, "post", $post);
+            $resultreg = eval_with_fields($insnname, \$insn, $rec, "post", $post);
         }
 
         if (defined $memblock) {
