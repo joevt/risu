@@ -70,6 +70,9 @@ enum {
     fp_opt_ignore_qnan_from_unknown     = 0x00010000,
     fp_opt_ignore_inf_from_unknown      = 0x00020000,
     fp_opt_ignore_zero_signs            = 0x00040000,
+    fp_opt_ignore_inf_div_inf           = 0x00080000,
+    fp_opt_ignore_QNaN_SNaN             = 0x00100000,
+    fp_opt_ignore_NaN_unknown_operands  = 0x00200000,
 };
 
 static const struct option extra_opts[] = {
@@ -604,6 +607,20 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
                 (
                     (fp_opts & fp_opt_ignore_NaN_operand) &&
                     (
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000034) || /* frsqrte */
+                        ((m->prev_insn & 0xfc1f07fe) == 0xfc000018) || /* frsp */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    (rb != i) &&
+                    (
+                        is_nan(m->fpregs[rb]) ||
+                        0
+                    )
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_NaN_operand) &&
+                    (
                         ((m->prev_insn & 0xfc00f83e) == 0xfc000032) || /* fmul */
                         ((m->prev_insn & 0xfc00f83e) == 0xec000032) || /* fmuls */
                         0
@@ -798,7 +815,7 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
                                 (
                                     (ra != i) &&
                                     (rb != i) &&
-                                    (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb])) < -126 // divide underflow
+                                    (exponent(m->fpregs[ra]) - exponent(m->fpregs[rb])) <= -126 // divide underflow
                                 ) ||
                                 (ra == i) || (rb == i)
                             )
@@ -1178,7 +1195,8 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
                             ) &&
                             (rt == i) &&
                             (rb != i) &&
-                            a->fpregs[i] == signinf(m->fpregs[i]) &&
+                            negative(a->fpregs[i]) == negative(m->fpregs[i]) &&
+                            exponent(a->fpregs[i]) >= 126 &&
                             exponent(m->fpregs[rb]) >= 126
                         ) ||
                         (
@@ -1447,6 +1465,41 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
                     zero(a->fpregs[i]) &&
                     zero(m->fpregs[i]) &&
                     ((a->fpregs[i] & ~(1ULL<<63)) == (m->fpregs[i] & ~(1ULL<<63)))
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_inf_div_inf) && (
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                        ((m->prev_insn & 0xfc0007fe) == 0xec000024) || /* fdivs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    infinite(a->fpregs[ra]) &&
+                    infinite(a->fpregs[rb])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_QNaN_SNaN) && (
+                        ((m->prev_insn & 0xfc0007fe) == 0xfc000024) || /* fdiv */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    is_nan(a->fpregs[i]) &&
+                    is_nan(m->fpregs[i])
+                ) ||
+                (
+                    (fp_opts & fp_opt_ignore_NaN_unknown_operands) && (
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003a) || /* fmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc000038) || /* fmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003e) || /* fnmadd */
+                        ((m->prev_insn & 0xfc00003e) == 0xfc00003c) || /* fnmsub */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003a) || /* fmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec000038) || /* fmsubs */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003e) || /* fnmadds */
+                        ((m->prev_insn & 0xfc00003e) == 0xec00003c) || /* fnmsubs */
+                        0
+                    ) &&
+                    (rt == i) &&
+                    is_nan(a->fpregs[i]) &&
+                    ( ra== i || rb == i || rc == i)
                 )
             ) {
                 a->fpregs[i] = m->fpregs[i];
