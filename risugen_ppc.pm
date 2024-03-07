@@ -805,7 +805,7 @@ sub gen_one_insn($$)
         if (defined $constraint) {
             # user-specified constraint: evaluate in an environment
             # with variables set corresponding to the variable fields.
-            my $v = eval_with_fields($insnname, $insn, $rec, "constraints", $constraint);
+            my $v = eval_with_fields($insnname, \$insn, $rec, "constraints", $constraint);
             if (!$v) {
                 $constraintfailures++;
                 if ($constraintfailures > 100000) {
@@ -826,7 +826,7 @@ sub gen_one_insn($$)
             # which is expected to be a call to a function which emits
             # the code to set up the base register and returns the
             # number of the base register.
-            $basereg = eval_with_fields($insnname, $insn, $rec, "memory", $memblock);
+            $basereg = eval_with_fields($insnname, \$insn, $rec, "memory", $memblock);
         }
 
         insn32($insn);
