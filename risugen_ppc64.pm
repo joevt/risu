@@ -331,6 +331,134 @@ sub reg_plus_imm($$@)
     return $base;
 }
 
+sub branch_pre($$)
+{
+    my ($bd, $bdsize) = @_;
+
+    if ($bdsize > 0) {
+        # bit field displacement
+
+        my $sign = $bd >> ($bdsize - 1);
+        $bd = ($bd & ((1<<$bdsize) - 1)) - ($sign ? (1<<$bdsize) : 0);
+    }
+
+    if ($bdsize < 24) {
+        # branch conditional
+
+        #          setup ctr: li r5, xxx
+        #                     mtctr r5
+
+        #          setup ccr: li r5, xxx
+        #                     mtcrf 0xff,r5
+
+        #          calculate: bl +4
+        #  0                  mflr r5
+        #  4                  addi r5, r5, 20 | 16 + bd<<2
+        #  8                  mtctr|lr r5
+
+        if ($bdsize != -1) {
+            # not branch conditional to ctr
+
+            write_mov_ri(5, irand(3) - 1); # -1, 0, 1, 2
+            # mtctr r5
+            insn32((31 << 26) | (5 << 21) | ((9 & 31) << 16) | ((9 >> 5) << 11) | (467 << 1));
+        }
+
+        write_mov_ri(5, irand(0xffffffff));
+        # mtcrf 0xff,r5
+        insn32((31 << 26) | (5 << 21) | (255 << 12) | (144 << 1));
+
+        if ($bdsize < 0) {
+            # branch conditional to lr or ctr
+
+            # bl +4
+            insn32((18 << 26) | (4) | (1));
+            # mflr r5
+            insn32((31 << 26) | (5 << 21) | ((8 & 31) << 16) | ((8 >> 5) << 11) | (339 << 1));
+
+            if ($bd < 0) {
+                # addi r5, r5, 16
+                write_add_ri(5, 5, 16);
+            } else {
+                # addi r5, r5, 12 + bd<<2
+                write_add_ri(5, 5, 12 + ($bd << 2));
+            }
+            if ($bdsize == -1) {
+                # mtctr r5
+                insn32((31 << 26) | (5 << 21) | ((9 & 31) << 16) | ((9 >> 5) << 11) | (467 << 1));
+            } else {
+                # mtlr r5
+                insn32((31 << 26) | (5 << 21) | ((8 & 31) << 16) | ((8 >> 5) << 11) | (467 << 1));
+            }
+        }
+    }
+
+    if ($bd < 0) {
+        # negative displacement
+        my $filler2 = irand(-$bd);
+
+        #  12                 b +4+|disaplacement|
+        #  16                 ... filler1 (0 or more)
+        #                     b +8 + filler2<<2
+        #                     ... filler2 (0 or more)
+        #                     b -|disaplacement| # the instruction
+
+        insn32((18 << 26) | ((1 - $bd - $filler2) << 2)); # branch to the negative offset branch
+        for (my $i = $bd + 1 + $filler2; $i < 0; $i++) {
+            write_add_ri(3,3,1); # filler before the negative offset branch
+        }
+        insn32((18 << 26) | (8 + ($filler2 << 2))); # jump over the negative offset branch
+        for (my $i = $filler2; $i > 0; $i--) {
+            write_add_ri(6,6,1); # filler before the negative offset branch
+        }
+    }
+    else {
+        # positive displacement
+
+        #  12                 b +|disaplacement| # the instruction
+        #  16                 ... filler (0 or more of these)
+    }
+}
+
+sub branch_post($$)
+{
+    my ($bd, $bdsize) = @_;
+
+    if ($bdsize > 0) {
+        # bit field displacement
+
+        my $sign = $bd >> ($bdsize - 1);
+        $bd = ($bd & ((1<<$bdsize) - 1)) - ($sign ? (1<<$bdsize) : 0);
+    }
+
+    if ($bd <= 0) {
+        $bd = 1;
+    }
+    for (my $i = $bd - 1; $i; $i--) {
+        write_add_ri(7,7,1); # filler after the positive offset branch
+    }
+    for (my $i = irand(3); $i; $i--) {
+        write_add_ri(4,4,1); # extra filler
+    }
+
+    if ($bdsize < 0) {
+        if ($bdsize == -1) {
+            # mfctr r8
+            insn32((31 << 26) | (8 << 21) | ((9 & 31) << 16) | ((9 >> 5) << 11) | (339 << 1));
+            write_subf_r(8,5,8);
+            # mtctr r8
+            insn32((31 << 26) | (8 << 21) | ((9 & 31) << 16) | ((9 >> 5) << 11) | (467 << 1));
+        }
+        else {
+            # mflr r8
+            insn32((31 << 26) | (8 << 21) | ((8 & 31) << 16) | ((8 >> 5) << 11) | (339 << 1));
+            write_subf_r(8,5,8);
+            # don't need to move to LR since LR compare is always PC relative.
+        }
+        write_mov_ri(5, irand(0x7fff));
+    }
+}
+
 sub gen_one_insn($$)
 {
     # Given an instruction-details array, generate an instruction
