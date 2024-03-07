@@ -662,13 +662,14 @@ static struct option * setup_options(const char **short_opts)
         {"trace", required_argument, 0, 't'},
         {0, 0, 0, 0}
     };
-    struct option *lopts = &default_longopts[0];
+    struct option *lopts;
 
     *short_opts = "h:p:t:";
 
+    const size_t osize = sizeof(struct option);
+    const int default_count = ARRAY_SIZE(default_longopts) - 1;
+
     if (arch_long_opts) {
-        const size_t osize = sizeof(struct option);
-        const int default_count = ARRAY_SIZE(default_longopts) - 1;
         int arch_count;
 
         /* count additional opts */
@@ -681,6 +682,12 @@ static struct option * setup_options(const char **short_opts)
         /* Copy default opts + extra opts */
         memcpy(lopts, default_longopts, default_count * osize);
         memcpy(lopts + default_count, arch_long_opts, arch_count * osize);
+    }
+    else {
+        lopts = (struct option *)calloc(default_count + 1, osize);
+
+        /* Copy default opts + null opt */
+        memcpy(lopts, default_longopts, (default_count + 1) * osize);
     }
 
     return lopts;
@@ -695,6 +702,7 @@ int risu_main(int argc, char **argv)
     char *trace_fn = NULL;
     struct option *longopts;
     const char *shortopts;
+    trace = false;
 
     longopts = setup_options(&shortopts);
 
@@ -722,6 +730,7 @@ int risu_main(int argc, char **argv)
             break;
         case '?':
             usage();
+            free(longopts);
             return EXIT_FAILURE;
         default:
             assert(c >= FIRST_ARCH_OPT);
@@ -731,7 +740,7 @@ int risu_main(int argc, char **argv)
     }
 
     if (trace) {
-        if (strcmp(trace_fn, "-") == 0) {
+        if (trace_fn && strcmp(trace_fn, "-") == 0) {
             comm_fd = ismaster ? STDOUT_FILENO : STDIN_FILENO;
         } else {
             if (ismaster) {
@@ -762,6 +771,7 @@ int risu_main(int argc, char **argv)
     if (!imgfile) {
         fprintf(stderr, "Error: must specify image file name\n\n");
         usage();
+        free(longopts);
         return EXIT_FAILURE;
     }
 
@@ -796,5 +806,6 @@ int risu_main(int argc, char **argv)
         result = apprentice();
     }
 
+    free(longopts);
     return result;
 }
