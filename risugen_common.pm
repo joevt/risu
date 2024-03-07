@@ -30,6 +30,9 @@ BEGIN {
         insn32 insn16 $bytecount
         progress_start progress_update progress_end progress_show
         eval_with_fields is_pow_of_2 sextract ctz
+        update_insn
+        $current_insn
+        $current_rec
         dump_insn_details
         $OP_COMPARE
         $OP_TESTEND
@@ -141,6 +144,20 @@ sub progress_end()
     }
 }
 
+our $current_insn;
+our $current_rec;
+
+sub update_insn($$) {
+    my ($changevar, $newval) = @_;
+    for my $tuple (@{ $current_rec->{fields} }) {
+        my ($var, $pos, $mask) = @$tuple;
+        if ($var eq $changevar) {
+            $$current_insn = ($$current_insn & ~($mask << $pos)) | (($newval & $mask) << $pos);
+            last;
+        }
+    }
+}
+
 sub eval_with_fields($$$$$) {
     # Evaluate the given block in an environment with Perl variables
     # set corresponding to the variable fields for the insn.
@@ -157,11 +174,13 @@ sub eval_with_fields($$$$$) {
     # change state it shouldn't have access to, and avoid the need to
     # use 'caller' to get the package name of our calling function.
     my ($insnname, $insn, $rec, $blockname, $block) = @_;
+    $current_insn = $insn;
+    $current_rec = $rec;
     my $calling_package = caller;
     my $evalstr = "{ package $calling_package; ";
     for my $tuple (@{ $rec->{fields} }) {
         my ($var, $pos, $mask) = @$tuple;
-        my $val = ($insn >> $pos) & $mask;
+        my $val = ($$insn >> $pos) & $mask;
         $evalstr .= "my (\$$var) = $val; ";
     }
     $evalstr .= $block;
