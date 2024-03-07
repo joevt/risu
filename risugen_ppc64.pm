@@ -167,14 +167,12 @@ sub write_random_ppc64_vrdata()
 
 sub write_random_regdata()
 {
-    # clear condition register
-    for (my $i = 0; $i < 32; $i++) {
-        # crxor i, i, i ; crclr i
-        insn32((0x13 << 26) | ($i << 21) | ($i << 16) | ($i << 11) | (0xc1 << 1) | 0);
-    }
-
     # li r23, 0
     write_mov_ri(23, 0);
+
+    # mtcrf 0xff,r23 ; zero the condition register
+    insn32((31 << 26) | (23 << 21) | (255 << 12) | (144 << 1));
+
     # mtxer r23 ; zero the xer register
     insn32((31 << 26) | (23 << 21) | ((1 & 31) << 16) | ((1 >> 5) << 11) | (467 << 1));
 
