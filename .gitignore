@@ -14,3 +14,9 @@ build
 risu*.s
 getopt.s
 comms.s
+risu Data/
+.finf/
+DerivedData/
+project.xcworkspace/
+xcshareddata/
+xcuserdata/
