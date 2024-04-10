@@ -17,12 +17,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifndef RISU_MACOS9
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#endif
 
+#ifndef RISU_MACOS9
 int apprentice_connect(const char *hostname, int port)
 {
     /* We are the client end of the TCP connection */
@@ -90,6 +93,7 @@ int master_connect(int port)
     close(sock);
     return nsock;
 }
+#endif
 
 /* Utility functions which are just wrappers around read and writev
  * to catch errors and retry on short reads/writes.
@@ -133,6 +137,7 @@ static void recv_and_discard_bytes(int sock, int pktlen)
     }
 }
 
+#ifndef RISU_MACOS9
 ssize_t safe_writev(int fd, struct iovec *iov_in, int iovcnt)
 {
     /* writev, retrying for EINTR and short writes */
@@ -211,6 +216,7 @@ RisuResult recv_data_pkt(int sock, void *pkt, int pktlen)
     recv_bytes(sock, pkt, pktlen);
     return RES_OK;
 }
+#endif
 
 void send_response_byte(int sock, int resp)
 {

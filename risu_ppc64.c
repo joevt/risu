@@ -11,9 +11,14 @@
  *     based on Peter Maydell's risu_arm.c
  *****************************************************************************/
 
-#include <sys/user.h>
-
 #include "risu.h"
+#ifdef RISU_MACOS9
+#include <MachineExceptions.h>
+#include <signal.h>
+#include <string.h>
+#else
+#include <sys/user.h>
+#endif
 #ifdef RISU_DPPC
     #include "ppcemu.h"
 #endif
@@ -23,6 +28,9 @@ void advance_pc(void *vuc)
 #if defined(RISU_DPPC)
     //We don't need to change the pc because ppctest-risu treats illegal ops as normal ops.
     //ppc_state.pc += 4;
+#elif defined(RISU_MACOS9)
+    ExceptionInformation *uc = (ExceptionInformation *) vuc;
+    uc->machineState->PC.lo += 4;
 #elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *) vuc;
     uc->uc_mcontext->ss.srr0 += 4;
@@ -36,6 +44,9 @@ arch_ptr_t get_uc_pc(void *vuc, void *siaddr)
 {
 #if defined(RISU_DPPC)
     return ppc_state.pc;
+#elif defined(RISU_MACOS9)
+    ExceptionInformation *uc = (ExceptionInformation *) vuc;
+    return uc->machineState->PC.lo;
 #elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *) vuc;
     return uc->uc_mcontext->ss.srr0;
@@ -49,6 +60,9 @@ void set_ucontext_paramreg(void *vuc, arch_ptr_t value)
 {
 #if defined(RISU_DPPC)
     ppc_state.gpr[0] = (uint32_t)value;
+#elif defined(RISU_MACOS9)
+    ExceptionInformation *uc = (ExceptionInformation *) vuc;
+    uc->registerImage->R0.lo = value;
 #elif defined(__APPLE__)
     ucontext_t *uc = vuc;
     uc->uc_mcontext->ss.r0 = value;
@@ -110,5 +124,25 @@ void ppc_exception_handler_risu(Except_Type exception_type, uint32_t srr1_bits)
     else {
         sig_handler(SIGBUS, &si, NULL);
     }
+}
+#endif
+
+#if defined(RISU_MACOS9)
+OSStatus classic_exception_handler(ExceptionInformation *theException)
+{
+    arch_siginfo_t si;
+    memset(&si, 0, sizeof(si));
+    si.si_addr = (void*)(size_t)theException->machineState->PC.lo;
+    if (theException->theKind == kTrapException)
+        return -1; // breakpoint
+    if (theException->theKind == kTraceException)
+        return -1; // step into
+    if (theException->theKind == kIllegalInstructionException) {
+        sig_handler(SIGILL, &si, theException);
+        return noErr;
+    }
+    printf("exception %d\n", theException->theKind);
+    sig_handler(SIGBUS, &si, theException);
+    return noErr;
 }
 #endif
