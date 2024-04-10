@@ -67,6 +67,7 @@ extern entrypoint_fn *image_start;
 extern size_t image_size;
 extern sig_handler_fn *sig_handler;
 extern size_t signal_count;
+extern size_t illegal_instructions;
 void do_image();
 
 /* Ops code under test can request from risu: */
