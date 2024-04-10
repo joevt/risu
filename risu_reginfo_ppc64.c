@@ -25,7 +25,7 @@
 #include <sys/user.h>
 #include <float.h>
 
-#ifdef DPPC
+#ifdef RISU_DPPC
     #include "risu_reginfo_dppc.h"
     #include "../../ppcemu.h"
     enum {
@@ -40,7 +40,7 @@
 #endif
 #include "endianswap.h"
 
-#if !defined(DPPC) && !defined(__APPLE__)
+#if !defined(RISU_DPPC) && !defined(__APPLE__)
     static uint32_t gregs_mask = ~((1 << (31-1)) | (1 << (31-13))); /* Bit mask of GP registers to compare. */ /* ignore r1 and r13 */
 #else
     static uint32_t gregs_mask = ~(1 << (31-1)); /* Bit mask of GP registers to compare. */ /* ignore r1 */
@@ -110,7 +110,7 @@ void process_arch_opt(int opt, const char *arg)
 }
 
 arch_ptr_t get_arch_start_address() {
-#ifdef DPPC
+#ifdef RISU_DPPC
     return DPPC_RISU_ROM_START;
 #else
     return (arch_ptr_t)image_start_address;
@@ -118,7 +118,7 @@ arch_ptr_t get_arch_start_address() {
 }
 
 void * get_arch_memory(arch_ptr_t arch_memblock) {
-#ifdef DPPC
+#ifdef RISU_DPPC
     AddressMapEntry* ref_entry;
     ref_entry = mem_ctrl->find_range(arch_memblock);
     if (!ref_entry)
@@ -134,7 +134,7 @@ void * get_arch_memory(arch_ptr_t arch_memblock) {
 
 void arch_init(void)
 {
-#ifdef DPPC
+#ifdef RISU_DPPC
     mem_ctrl = new MemCtrlBase;
 
     // configure CPU clocks
@@ -155,7 +155,7 @@ void arch_init(void)
 void do_image()
 {
     int i;
-#ifdef DPPC
+#ifdef RISU_DPPC
     uint8_t *stack_bytes = (uint8_t *)get_arch_memory(DPPC_RISU_STACK + 0x3C);
     for (i = 0; i < 32768; i++)
         stack_bytes[i] = i;
@@ -248,7 +248,7 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
     ri->next_insn        = arch_to_host_32((pc + 4) >= ibegin && (pc + 4) < iend ? *((uint32_t *) (pc_ptr + 4)) : 0);
     ri->nip = (uint32_t)(pc - ibegin);
 
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     for (i = 0; i < 32; i++) {
         ri->gregs[i] = ppc_state.gpr[i];
     }
@@ -292,7 +292,7 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
     ri->gregs[risu_DSISR] = uc->uc_mcontext.gp_regs[DSISR];
 #endif
 
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     memcpy(ri->fpregs, ppc_state.fpr, 32 * sizeof(double));
     ri->fpscr = ppc_state.fpscr;
 #elif defined(__APPLE__)
@@ -304,7 +304,7 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 #endif
 
 #ifdef VRREGS
-#if defined(DPPC)
+#if defined(RISU_DPPC)
 #elif defined(__APPLE__)
     if (uc->uc_mcsize >= (sizeof(struct mcontext))) {
         memcpy(ri->vrregs.vrregs, uc->uc_mcontext->vs.save_vr,
@@ -338,7 +338,7 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 /* reginfo_update: update the context */
 void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     ppc_state.cr = ri->gregs[risu_CCR];
 #elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *)vuc;
@@ -353,7 +353,7 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
         if ((1 << (31-i)) & ~gregs_mask) {
             continue;
         }
-#if defined(DPPC)
+#if defined(RISU_DPPC)
         ppc_state.gpr[i] = ri->gregs[i];
 #elif defined(__APPLE__)
         if (sizeof(uc->uc_mcontext->ss.r0) == 8)
@@ -365,7 +365,7 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 #endif
     }
 
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     memcpy(ppc_state.fpr, ri->fpregs, 32 * sizeof(double));
     ppc_state.fpscr = ri->fpscr;
 #elif defined(__APPLE__)
@@ -377,7 +377,7 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 #endif
 
 #ifdef VRREGS
-#if defined(DPPC)
+#if defined(RISU_DPPC)
 #elif defined(__APPLE__)
     memcpy(uc->uc_mcontext->vs.save_vscr, ri->vrregs.vscr,
            sizeof(ri->vrregs.vscr[0]) * 4);
@@ -1554,7 +1554,7 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
     fprintf(f, "\txer    : %0" PRIx "\n", ri->gregs[risu_XER  ]);
     fprintf(f, "\tccr    : %0" PRIx "\n", ri->gregs[risu_CCR  ]);
     fprintf(f, "\tmq     : %0" PRIx "\n", ri->gregs[risu_MQ   ]);
-#if !defined(__APPLE__) && !defined(DPPC)
+#if !defined(__APPLE__) && !defined(RISU_DPPC)
     fprintf(f, "\tdar    : %0" PRIx "\n", ri->gregs[risu_DAR  ]);
     fprintf(f, "\tdsisr  : %0" PRIx "\n", ri->gregs[risu_DSISR]);
 #endif
@@ -1576,7 +1576,7 @@ int reginfo_dump(struct reginfo *ri, FILE * f)
             ri->vrregs.vscr[2], ri->vrregs.vscr[3]
     );
     fprintf(f, "\tvrsave : %08x\n", ri->vrregs.vrsave);
-#if defined(__APPLE__) && !defined(DPPC)
+#if defined(__APPLE__) && !defined(RISU_DPPC)
     fprintf(f, "\tvrsave2 : %08x\n", ri->vrregs.vrsave2);
     fprintf(f, "\tsave_vrvalid : %08x\n\n", ri->vrregs.save_vrvalid);
 #endif
@@ -1657,7 +1657,7 @@ int reginfo_dump_mismatch(struct reginfo *m, struct reginfo *a, FILE *f)
     return !ferror(f);
 }
 
-#if defined(DPPC)
+#if defined(RISU_DPPC)
 static void reginfo_swap(struct reginfo *ri) {
     int i;
 
@@ -1697,13 +1697,13 @@ static void reginfo_swap(struct reginfo *ri) {
 #endif
 
 void reginfo_host_to_arch(struct reginfo *ri) {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     reginfo_swap(ri);
 #endif
 }
 
 void reginfo_arch_to_host(struct reginfo *ri) {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     reginfo_swap(ri);
 #endif
 }

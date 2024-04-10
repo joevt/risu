@@ -14,7 +14,7 @@
 #ifndef RISU_REGINFO_PPC64_H
 #define RISU_REGINFO_PPC64_H
 
-#if defined(__LP64__) && !defined(DPPC)
+#if defined(__LP64__) && !defined(RISU_DPPC)
     typedef uint64_t arch_ptr_t;
     typedef uint64_t reg_t;
     #define PRIx "16" PRIx64
