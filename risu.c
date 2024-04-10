@@ -460,6 +460,12 @@ static void load_image(const char *imgfile)
     image_start_address = (uintptr_t) addr;
 }
 
+static void unload_image()
+{
+    image_start_address = NULL;
+    image_start = NULL;
+}
+
 static void close_comm()
 {
 #ifdef HAVE_ZLIB
@@ -805,6 +811,8 @@ int risu_main(int argc, char **argv)
         fprintf(stderr, "starting apprentice\n");
         result = apprentice();
     }
+
+    unload_image();
 
     free(longopts);
     return result;
