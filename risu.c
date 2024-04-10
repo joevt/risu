@@ -481,6 +481,16 @@ static void close_comm()
     close(comm_fd);
 }
 
+static void print_loc()
+{
+    fprintf(stderr, " at image + 0x%" PRIxARCHPTR, signal_pc - get_arch_start_address());
+}
+
+static void print_stats()
+{
+    fprintf(stderr, " after %zd checkpoints and %zd illegal instructions\n", signal_count - illegal_instructions, illegal_instructions);
+}
+
 static int master(void)
 {
     int result;
@@ -497,24 +507,24 @@ static int master(void)
         break;
 
     case RES_END:
-        fprintf(stderr, "done after %zd checkpoints\n", signal_count);
+        fprintf(stderr, "done"); print_stats();
         close_comm();
         result = EXIT_SUCCESS;
         break;
 
     case RES_BAD_IO:
-        fprintf(stderr, "i/o error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "i/o error"); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_SIGBUS:
-        fprintf(stderr, "bus error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "bus error"); print_loc(); print_stats();
         close_comm();
         result = EXIT_FAILURE;
         break;
 
     default:
-        fprintf(stderr, "unexpected result %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", res, signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "unexpected result %d", res); print_loc(); print_stats();
         close_comm();
         result = EXIT_FAILURE;
         break;
@@ -562,12 +572,12 @@ static int apprentice(void)
         break;
 
     case RES_END:
-        fprintf(stderr, "done after %zd checkpoints\n", signal_count);
+        fprintf(stderr, "done"); print_stats();
         result = EXIT_SUCCESS;
         break;
 
     case RES_MISMATCH_REG:
-        fprintf(stderr, "Mismatch reg at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Mismatch reg"); print_loc(); print_stats();
         fprintf(stderr, "master reginfo:\n");
         reginfo_dump(&ri[MASTER], stderr);
         fprintf(stderr, "apprentice reginfo:\n");
@@ -577,63 +587,62 @@ static int apprentice(void)
         break;
 
     case RES_MISMATCH_MEM:
-        fprintf(stderr, "Mismatch mem at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Mismatch mem"); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_MISMATCH_OP:
         /* Out of sync, but both opcodes are known valid. */
-        fprintf(stderr, "Mismatch header at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n"
-                "mismatch detail (master : apprentice):\n"
-                "  opcode: %s vs %s\n",
-                signal_pc - get_arch_start_address(),
-                signal_count, op_name(header.risu_op),
+        fprintf(stderr, "Mismatch header"); print_loc(); print_stats();
+        fprintf(stderr, "mismatch detail (master : apprentice):\n"
+                        "  opcode: %s vs %s\n",
+                op_name((RisuOp)header.risu_op),
                 op_name(get_risuop(&ri[APPRENTICE])));
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_IO:
-        fprintf(stderr, "i/o error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "i/o error"); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_MAGIC:
-        fprintf(stderr, "Unexpected magic number: %#08x at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.magic, signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Unexpected magic number: %#08x", header.magic); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_HEADER:
-        fprintf(stderr, "Payload size %u in header exceeds expected size %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, (int)sizeof(struct reginfo), signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Payload size %u in header exceeds expected size %d", header.size, (int)sizeof(struct reginfo)); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_REGINFO:
-        fprintf(stderr, "Payload size %u in header doesn't match received payload size %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, reginfo_size(&ri[MASTER]), signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Payload size %u in header doesn't match received payload size %d", header.size, reginfo_size(&ri[MASTER])); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_MEMBLOCK:
-        fprintf(stderr, "Payload size %u in header doesn't match the expected memory block payload size %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, MEMBLOCKLEN, signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Payload size %u in header doesn't match the expected memory block payload size %d", header.size, MEMBLOCKLEN); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_SIZE_ZERO:
-        fprintf(stderr, "Payload size %u in header is expected to be 0 at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.size, signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Payload size %u in header is expected to be 0", header.size); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_BAD_OP:
-        fprintf(stderr, "Unexpected opcode: %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", header.risu_op, signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Unexpected opcode: %d", header.risu_op); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     case RES_SIGBUS:
-        fprintf(stderr, "bus error at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "bus error"); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
 
     default:
-        fprintf(stderr, "Unexpected result %d at image + 0x%" PRIxARCHPTR " after %zd checkpoints\n", res, signal_pc - get_arch_start_address(), signal_count);
+        fprintf(stderr, "Unexpected result %d" PRIxARCHPTR, res); print_loc(); print_stats();
         result = EXIT_FAILURE;
         break;
     }
