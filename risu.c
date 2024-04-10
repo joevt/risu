@@ -48,6 +48,7 @@ arch_ptr_t arch_memblock;
 static int comm_fd;
 static bool trace;
 size_t signal_count;
+size_t illegal_instructions;
 static arch_ptr_t signal_pc;
 static bool is_setup = false;
 
@@ -154,8 +155,10 @@ static RisuResult send_register_info(void *uc, void *siaddr)
 
     reginfo_init(&ri[MASTER], uc, siaddr);
     op = get_risuop(&ri[MASTER]);
-    if (is_setup && op == OP_SIGILL) {
-        return RES_OK;
+    if (op == OP_SIGILL) {
+        illegal_instructions++;
+        if (is_setup)
+            return RES_OK;
     }
 
     /* Write a header with PC/op to keep in sync */
@@ -300,8 +303,10 @@ static RisuResult recv_and_compare_register_info(void *uc, void *siaddr)
 
     reginfo_init(&ri[APPRENTICE], uc, siaddr);
     op = get_risuop(&ri[APPRENTICE]);
-    if (is_setup && op == OP_SIGILL) {
-        return RES_OK;
+    if (op == OP_SIGILL) {
+        illegal_instructions++;
+        if (is_setup)
+            return RES_OK;
     }
 
     res = recv_register_info(&ri[MASTER]);
@@ -710,6 +715,7 @@ int risu_main(int argc, char **argv)
     const char *shortopts;
     trace = false;
     signal_count = 0;
+    illegal_instructions = 0;
 
     longopts = setup_options(&shortopts);
 
