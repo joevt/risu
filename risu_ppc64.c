@@ -60,11 +60,7 @@ void set_ucontext_paramreg(void *vuc, arch_ptr_t value)
 
 arch_ptr_t get_reginfo_paramreg(struct reginfo *ri)
 {
-#if defined(DPPC)
-    return ppc_state.gpr[0];
-#else
     return ri->gregs[0];
-#endif
 }
 
 RisuOp get_risuop(struct reginfo *ri)
