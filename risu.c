@@ -543,6 +543,7 @@ static const char *op_name(RisuOp op)
         return "SETUPEND";
     }
     abort();
+    return "";
 }
 
 static int apprentice(void)
