@@ -14,6 +14,10 @@
 #ifndef RISU_REGINFO_PPC64_H
 #define RISU_REGINFO_PPC64_H
 
+#ifdef RISU_MACOS9
+#include <cinttypes>
+#endif
+
 #if defined(__LP64__) && !defined(RISU_DPPC)
     typedef uint64_t arch_ptr_t;
     typedef uint64_t reg_t;
@@ -56,7 +60,11 @@ struct reginfo {
     uint32_t next_insn;
     uint32_t nip;
     risu_gregset_t gregs;
+#ifdef RISU_MACOS9
+    uint64_t fpregs[32];
+#else
     uint64_t fpregs[32] __attribute__((packed));
+#endif
     reg_t fpscr;
 #ifdef VRREGS
     risu_vrregset_t vrregs;

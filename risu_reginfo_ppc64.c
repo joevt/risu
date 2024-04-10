@@ -22,8 +22,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
+#ifdef RISU_MACOS9
+#include <MachineExceptions.h>
+#else
 #include <sys/user.h>
+#endif
 #include <float.h>
+#include <cinttypes>
 
 #ifdef RISU_DPPC
     #include "risu_reginfo_dppc.h"
@@ -170,7 +175,21 @@ void do_image()
 
     power_on = true;
     ppc_exec();
+#elif defined(RISU_MACOS9)
+    uint8_t stack_bytes[32768];
+    for (i = 0; i < sizeof(stack_bytes); i++)
+        stack_bytes[i] = i;
+
+    register uint8_t *stack = stack_bytes - 0x3C;
+    register uintptr_t start = image_start_address;
+    asm {
+        addi r1, stack, 0
+        mtctr start
+        bctr
+    }
 #else
+    // RISU_DPPC and RISU_MACOS9 assume that the image is executed with r1 (stack pointer)
+    // pointing to stack_bytes - 0x3C. This is true for Mac OS X 10.4.11.
     uint8_t stack_bytes[32768];
     for (i = 0; i < sizeof(stack_bytes); i++)
         stack_bytes[i] = i;
@@ -236,7 +255,9 @@ static void savevec(void *vrregs, void *vscr, void *vrsave)
 /* reginfo_init: initialize with a ucontext */
 void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 {
-#ifdef NO_SIGNAL
+#if defined(RISU_MACOS9)
+    ExceptionInformation *uc = (ExceptionInformation *) vuc;
+#elif defined(NO_SIGNAL)
     void *uc = vuc;
 #else
     ucontext_t *uc = (ucontext_t *)vuc;
@@ -269,6 +290,19 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
     ri->gregs[risu_MQ   ] = ppc_state.spr[SPR::MQ];
     ri->gregs[risu_DAR  ] = ppc_state.spr[SPR::DAR];
     ri->gregs[risu_DSISR] = ppc_state.spr[SPR::DSISR];
+#elif defined(RISU_MACOS9)
+    for (i = 0; i < 32; i++) {
+        ri->gregs[i] = (&uc->registerImage->R0)[i].lo;
+    }
+    ri->gregs[risu_NIP  ] = pc;
+    ri->gregs[risu_MSR  ] = uc->machineState->MSR;
+    ri->gregs[risu_CTR  ] = uc->machineState->CTR.lo;
+    ri->gregs[risu_LNK  ] = uc->machineState->LR.lo;
+    ri->gregs[risu_XER  ] = uc->machineState->XER;
+    ri->gregs[risu_CCR  ] = uc->machineState->CR;
+    ri->gregs[risu_MQ   ] = uc->machineState->MQ;
+    ri->gregs[risu_DAR  ] = uc->machineState->DAR.lo;
+    ri->gregs[risu_DSISR] = uc->machineState->DSISR;
 #elif defined(__APPLE__)
     for (i = 0; i < 32; i++) {
         if (sizeof(uc->uc_mcontext->ss.r0) == 8)
@@ -303,6 +337,9 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 #if defined(RISU_DPPC)
     memcpy(ri->fpregs, ppc_state.fpr, 32 * sizeof(double));
     ri->fpscr = ppc_state.fpscr;
+#elif defined(RISU_MACOS9)
+    memcpy(ri->fpregs, uc->FPUImage->Registers, 32 * sizeof(double));
+    ri->fpscr = uc->FPUImage->FPSCR;
 #elif defined(__APPLE__)
     memcpy(ri->fpregs, uc->uc_mcontext->fs.fpregs, 32 * sizeof(double));
     ri->fpscr = uc->uc_mcontext->fs.fpscr;
@@ -313,6 +350,7 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 
 #ifdef VRREGS
 #if defined(RISU_DPPC)
+#elif defined(RISU_MACOS9)
 #elif defined(__APPLE__)
     if (uc->uc_mcsize >= (sizeof(struct mcontext))) {
         memcpy(ri->vrregs.vrregs, uc->uc_mcontext->vs.save_vr,
@@ -351,6 +389,11 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
     ppc_state.cr = ri->gregs[risu_CCR];
     ppc_state.spr[SPR::XER] = ri->gregs[risu_XER];
     ppc_state.spr[SPR::MQ] = ri->gregs[risu_MQ];
+#elif defined(RISU_MACOS9)
+    ExceptionInformation *uc = (ExceptionInformation *) vuc;
+    uc->machineState->CR = ri->gregs[risu_CCR];
+    uc->machineState->XER = ri->gregs[risu_XER];
+    uc->machineState->MQ = ri->gregs[risu_MQ];
 #elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *)vuc;
     uc->uc_mcontext->ss.cr = ri->gregs[risu_CCR];
@@ -370,6 +413,8 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
         }
 #if defined(RISU_DPPC)
         ppc_state.gpr[i] = ri->gregs[i];
+#elif defined(RISU_MACOS9)
+    (&uc->registerImage->R0)[i].lo = ri->gregs[i];
 #elif defined(__APPLE__)
         if (sizeof(uc->uc_mcontext->ss.r0) == 8)
             ((uint64_t*)(&uc->uc_mcontext->ss.r0))[i] = ri->gregs[i];
@@ -383,6 +428,9 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 #if defined(RISU_DPPC)
     memcpy(ppc_state.fpr, ri->fpregs, 32 * sizeof(double));
     ppc_state.fpscr = ri->fpscr;
+#elif defined(RISU_MACOS9)
+    memcpy(uc->FPUImage->Registers, ri->fpregs, 32 * sizeof(double));
+    uc->FPUImage->FPSCR = ri->fpscr;
 #elif defined(__APPLE__)
     memcpy(uc->uc_mcontext->fs.fpregs, ri->fpregs, 32 * sizeof(double));
     uc->uc_mcontext->fs.fpscr = ri->fpscr;
@@ -393,6 +441,7 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 
 #ifdef VRREGS
 #if defined(RISU_DPPC)
+#elif defined(RISU_MACOS9)
 #elif defined(__APPLE__)
     memcpy(uc->uc_mcontext->vs.save_vscr, ri->vrregs.vscr,
            sizeof(ri->vrregs.vscr[0]) * 4);

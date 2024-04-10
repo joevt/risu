@@ -18,8 +18,10 @@
 #include <errno.h>
 #include <setjmp.h>
 #include <assert.h>
+#ifndef RISU_MACOS9
 #include <sys/stat.h>
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 #include <string.h>
 
@@ -60,7 +62,18 @@ static gzFile gz_trace_file;
 #define TRACE_TYPE "uncompressed"
 #endif
 
-static sigjmp_buf jmpbuf;
+#ifdef RISU_MACOS9
+    #include <setjmp.h>
+    #include <signal.h>
+    #include <MachineExceptions.h>
+    #include <Memory.h>
+    #include <OSUtils.h>
+    static jmp_buf jmpbuf;
+    ExceptionHandler prevHandler;
+    OSStatus classic_exception_handler(ExceptionInformation *theException);
+#else
+    static sigjmp_buf jmpbuf;
+#endif
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -101,9 +114,11 @@ static RisuResult read_buffer(void *ptr, size_t bytes)
 {
     size_t res;
 
+#ifndef RISU_MACOS9
     if (!trace) {
         return recv_data_pkt(comm_fd, ptr, (int)bytes);
     }
+#endif
 
 #ifdef HAVE_ZLIB
     if (comm_fd == STDIN_FILENO) {
@@ -122,9 +137,11 @@ static RisuResult write_buffer(void *ptr, size_t bytes)
 {
     size_t res;
 
+#ifndef RISU_MACOS9
     if (!trace) {
         return send_data_pkt(comm_fd, ptr, (int)bytes);
     }
+#endif
 
 #ifdef HAVE_ZLIB
     if (comm_fd == STDOUT_FILENO) {
@@ -241,7 +258,11 @@ static void master_sigill(int sig, arch_siginfo_t *si, void *uc)
         advance_pc(uc);
     } else {
         signal_pc = get_uc_pc(uc, si->si_addr);
+#ifdef RISU_MACOS9
+        longjmp(jmpbuf, r);
+#else
         siglongjmp(jmpbuf, r);
+#endif
     }
 }
 
@@ -403,7 +424,11 @@ static void apprentice_sigill(int sig, arch_siginfo_t *si, void *uc)
         advance_pc(uc);
     } else {
         signal_pc = get_uc_pc(uc, si->si_addr);
+#ifdef RISU_MACOS9
+        longjmp(jmpbuf, r);
+#else
         siglongjmp(jmpbuf, r);
+#endif
     }
 }
 
@@ -411,6 +436,9 @@ static void set_sigill_handler(sig_handler_fn *fn)
 {
 #ifdef NO_SIGNAL
     sig_handler = fn;
+    #ifdef RISU_MACOS9
+        prevHandler = InstallExceptionHandler(classic_exception_handler);
+    #endif
 #else
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
@@ -450,12 +478,27 @@ static void load_image(const char *imgfile)
     image_size = st.st_size;
     void *addr;
 
+#ifdef RISU_MACOS9
+    addr = malloc(image_size);
+    if (!addr) {
+        if (!errno)
+            errno = MemError();
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+    read(fd, addr, image_size);
+    FlushCodeCacheRange(addr, image_size);
+    __eieio();
+    __sync();
+    __isync();
+#else
     /* Map writable because we include the memory area for store
      * testing in the image.
      */
     addr =
         mmap(0, image_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd,
              0);
+#endif
     if (!addr) {
         perror("mmap");
         exit(EXIT_FAILURE);
@@ -467,6 +510,9 @@ static void load_image(const char *imgfile)
 
 static void unload_image()
 {
+#ifdef RISU_MACOS9
+    free((void*)image_start_address);
+#endif
     image_start_address = NULL;
     image_start = NULL;
 }
@@ -494,7 +540,11 @@ static void print_stats()
 static int master(void)
 {
     int result;
+#ifdef RISU_MACOS9
+    RisuResult res = (RisuResult)setjmp(jmpbuf);
+#else
     RisuResult res = (RisuResult)sigsetjmp(jmpbuf, 1);
+#endif
 
     switch (res) {
     case RES_OK:
@@ -559,7 +609,11 @@ static const char *op_name(RisuOp op)
 static int apprentice(void)
 {
     int result;
+#ifdef RISU_MACOS9
+    RisuResult res = (RisuResult)setjmp(jmpbuf);
+#else
     RisuResult res = (RisuResult)sigsetjmp(jmpbuf, 1);
+#endif
 
     switch (res) {
     case RES_OK:
@@ -766,7 +820,13 @@ int risu_main(int argc, char **argv)
 
     if (trace) {
         if (trace_fn && strcmp(trace_fn, "-") == 0) {
+#ifdef RISU_MACOS9
+            fprintf(stderr, "trace file cannot be %s.\n", ismaster ? "stdout" : "stdin");
+            perror("trace");
+            exit(EXIT_FAILURE);
+#else
             comm_fd = ismaster ? STDOUT_FILENO : STDIN_FILENO;
+#endif
         } else {
             if (ismaster) {
                 comm_fd = open(trace_fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -783,6 +843,11 @@ int risu_main(int argc, char **argv)
 #endif
         }
     } else {
+#ifdef RISU_MACOS9
+        fprintf(stderr, "trace file must be specified.\n");
+        perror("trace");
+        exit(EXIT_FAILURE);
+#else
         if (ismaster) {
             fprintf(stderr, "master port %d\n", port);
             comm_fd = master_connect(port);
@@ -790,6 +855,7 @@ int risu_main(int argc, char **argv)
             fprintf(stderr, "apprentice host %s port %d\n", hostname, port);
             comm_fd = apprentice_connect(hostname, port);
         }
+#endif
     }
 
     imgfile = argv[optind];

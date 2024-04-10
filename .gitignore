@@ -4,7 +4,6 @@
 *.risu.asm
 risu
 core
-config.h
 Makefile.in
 build
 *.pbxuser
@@ -20,3 +19,4 @@ DerivedData/
 project.xcworkspace/
 xcshareddata/
 xcuserdata/
+*.mcp
