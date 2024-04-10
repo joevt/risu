@@ -4530,7 +4530,7 @@ DOZI PPC64LE 9:6 rt:5 ra:5 imm:16 \
 LSCBX PPC64LE 31:6 rt:5 ra:5 rb:5 277:10 0:1 \
 !constraints { \
     my $nb = irand(0x7f); \
-    set_num("nb", $nb | (irand(0xff) << 16)); \
+    set_num("nb", $nb | (irand(0xff) << 8)); \
     my $regs = regs_wrapped($rt, $nb); \
     usable($ra, $rb) && $ra != $rb && usable_wrapped($regs); \
 } \
@@ -4542,7 +4542,7 @@ LSCBX PPC64LE 31:6 rt:5 ra:5 rb:5 277:10 0:1 \
 LSCBXd PPC64LE 31:6 rt:5 ra:5 rb:5 277:10 1:1 \
 !constraints { \
     my $nb = irand(0x7f); \
-    set_num("nb", $nb | (irand(0xff) << 16)); \
+    set_num("nb", $nb | (irand(0xff) << 8)); \
     my $regs = regs_wrapped($rt, $nb); \
     usable($ra, $rb) && $ra != $rb && usable_wrapped($regs); \
 } \
