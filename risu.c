@@ -50,7 +50,7 @@ static bool trace;
 size_t signal_count;
 size_t illegal_instructions;
 static arch_ptr_t signal_pc;
-static bool is_setup = false;
+static bool is_setup;
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
@@ -716,6 +716,8 @@ int risu_main(int argc, char **argv)
     trace = false;
     signal_count = 0;
     illegal_instructions = 0;
+    is_setup = false;
+    ismaster = 0;
 
     longopts = setup_options(&shortopts);
 
