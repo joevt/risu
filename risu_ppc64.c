@@ -100,7 +100,7 @@ uint32_t arch_to_host_32(uint32_t val) {
 #if defined(DPPC)
 void ppc_exception_handler_risu(Except_Type exception_type, uint32_t srr1_bits) {
     arch_siginfo_t si;
-    bzero(&si, sizeof(si));
+    memset(&si, 0, sizeof(si));
     si.si_addr = (void*)(size_t)ppc_state.pc;
     if (exception_type == Except_Type::EXC_PROGRAM)
         sig_handler(SIGILL, &si, NULL);
