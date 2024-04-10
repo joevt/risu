@@ -57,6 +57,8 @@ static uint32_t fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. 
 static uint32_t fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
 static uint32_t vrregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
 static uint32_t fp_opts     = 0; /* option bits. 1 = ignore NaN sign */
+static uint32_t cpu_opts    = 0;
+
 enum {
     fp_opt_ignore_QNaN_signs            = 0x00000001,
     fp_opt_ignore_QNaN_values           = 0x00000002,
@@ -82,6 +84,10 @@ enum {
     fp_opt_ignore_NaN_unknown_operands  = 0x00200000,
 };
 
+enum {
+    cpu_opt_include_601 = 0x00000001,
+};
+
 static const struct option extra_opts[] = {
     {"ccr_mask"   , required_argument, NULL, FIRST_ARCH_OPT + 0 },
     {"fpscr_mask" , required_argument, NULL, FIRST_ARCH_OPT + 1 },
@@ -91,6 +97,7 @@ static const struct option extra_opts[] = {
     {"gregs_mask" , required_argument, NULL, FIRST_ARCH_OPT + 5 },
     {"xer_mask"   , required_argument, NULL, FIRST_ARCH_OPT + 6 },
     {"mq_mask"    , required_argument, NULL, FIRST_ARCH_OPT + 7 },
+    {"cpu_opts"   , required_argument, NULL, FIRST_ARCH_OPT + 8 },
     {0, 0, 0, 0}
 };
 
@@ -104,11 +111,12 @@ const char * const arch_extra_help =
     "  --mq_mask=MASK     Mask of MQ bits to compare\n"
     "  --fpscr_mask=MASK  Mask of FPSCR bits to compare\n"
     "  --fp_opts=OPTS     Options for comparing fpregs\n"
+    "  --cpu_opts=OPTS    CPU options\n"
     ;
 
 void process_arch_opt(int opt, const char *arg)
 {
-    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 7);
+    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 8);
     uint32_t val = (uint32_t)strtoul(arg, 0, 16);
     switch (opt - FIRST_ARCH_OPT) {
         case 0: ccr_mask    = val; break;
@@ -119,6 +127,7 @@ void process_arch_opt(int opt, const char *arg)
         case 5: gregs_mask  = val; break;
         case 6: xer_mask    = val; break;
         case 7: mq_mask     = val; break;
+        case 8: cpu_opts    = val; break;
     }
 }
 
@@ -154,8 +163,9 @@ void arch_init(void)
     uint64_t bus_freq      = 50000000ULL;
     uint64_t timebase_freq = bus_freq / 4;
 
-    // initialize virtual CPU and request MPC750 CPU aka G3
-    ppc_cpu_init(mem_ctrl, PPC_VER::MPC750, timebase_freq);
+    // Initialize virtual CPU and request MPC750 CPU aka G3.
+    // Add include_601 for running on Mac OS 9 which emulates MPC601 instructions.
+    ppc_cpu_init(mem_ctrl, PPC_VER::MPC750, cpu_opts & cpu_opt_include_601, timebase_freq);
 
     mem_ctrl->add_ram_region(DPPC_RISU_RAM_START, DPPC_RISU_RAM_SIZE);
     mem_ctrl->add_rom_region(DPPC_RISU_ROM_START, (uint32_t)image_size);
