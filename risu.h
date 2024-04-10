@@ -69,6 +69,7 @@ extern sig_handler_fn *sig_handler;
 extern size_t signal_count;
 extern size_t illegal_instructions;
 void do_image();
+int risu_main(int argc, char **argv);
 
 /* Ops code under test can request from risu: */
 typedef enum {

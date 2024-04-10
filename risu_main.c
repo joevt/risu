@@ -14,8 +14,6 @@
 
 #include "risu.h"
 
-int risu_main(int argc, char **argv);
-
 int main(int argc, char **argv)
 {
     return risu_main(argc, argv);
