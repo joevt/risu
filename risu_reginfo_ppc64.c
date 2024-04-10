@@ -46,6 +46,8 @@
     static uint32_t gregs_mask = ~(1 << (31-1)); /* Bit mask of GP registers to compare. */ /* ignore r1 */
 #endif
 static uint32_t ccr_mask    = 0xFFFFFFFF; /* Bit mask of CCR bits to compare. */
+static uint32_t xer_mask    = 0xFFFFFFFF; /* Bit mask of XER bits to compare. */
+static uint32_t mq_mask     = 0xFFFFFFFF; /* Bit mask of MQ bits to compare. */
 static uint32_t fpscr_mask  = 0xFFFFFFFF; /* Bit mask of FPSCR bits to compare. */
 static uint32_t fpregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
 static uint32_t vrregs_mask = 0xFFFFFFFF; /* Bit mask of FP registers to compare. */
@@ -82,6 +84,8 @@ static const struct option extra_opts[] = {
     {"vrregs_mask", required_argument, NULL, FIRST_ARCH_OPT + 3 },
     {"fp_opts",     required_argument, NULL, FIRST_ARCH_OPT + 4 },
     {"gregs_mask" , required_argument, NULL, FIRST_ARCH_OPT + 5 },
+    {"xer_mask"   , required_argument, NULL, FIRST_ARCH_OPT + 6 },
+    {"mq_mask"    , required_argument, NULL, FIRST_ARCH_OPT + 7 },
     {0, 0, 0, 0}
 };
 
@@ -91,13 +95,15 @@ const char * const arch_extra_help =
     "  --fpregs_mask=MASK Mask of fpregs to compare\n"
     "  --vrregs_mask=MASK Mask of vrregs to compare\n"
     "  --ccr_mask=MASK    Mask of CCR bits to compare\n"
+    "  --xer_mask=MASK    Mask of XER bits to compare\n"
+    "  --mq_mask=MASK     Mask of MQ bits to compare\n"
     "  --fpscr_mask=MASK  Mask of FPSCR bits to compare\n"
     "  --fp_opts=OPTS     Options for comparing fpregs\n"
     ;
 
 void process_arch_opt(int opt, const char *arg)
 {
-    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 5);
+    assert(opt >= FIRST_ARCH_OPT && opt <= FIRST_ARCH_OPT + 7);
     uint32_t val = (uint32_t)strtoul(arg, 0, 16);
     switch (opt - FIRST_ARCH_OPT) {
         case 0: ccr_mask    = val; break;
@@ -106,6 +112,8 @@ void process_arch_opt(int opt, const char *arg)
         case 3: vrregs_mask = val; break;
         case 4: fp_opts     = val; break;
         case 5: gregs_mask  = val; break;
+        case 6: xer_mask    = val; break;
+        case 7: mq_mask     = val; break;
     }
 }
 
@@ -341,12 +349,18 @@ void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
     #pragma unused(siaddr)
 #if defined(RISU_DPPC)
     ppc_state.cr = ri->gregs[risu_CCR];
+    ppc_state.spr[SPR::XER] = ri->gregs[risu_XER];
+    ppc_state.spr[SPR::MQ] = ri->gregs[risu_MQ];
 #elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *)vuc;
     uc->uc_mcontext->ss.cr = ri->gregs[risu_CCR];
+    uc->uc_mcontext->ss.xer = ri->gregs[risu_XER];
+    uc->uc_mcontext->ss.mq = ri->gregs[risu_MQ];
 #else
     ucontext_t *uc = (ucontext_t *)vuc;
     uc->uc_mcontext.gp_regs[CR] = ri->gregs[risu_CCR];
+    uc->uc_mcontext.gp_regs[XER] = ri->gregs[risu_XER];
+    uc->uc_mcontext.gp_regs[MQ] = ri->gregs[risu_MQ];
 #endif
 
     int i;
@@ -504,7 +518,11 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     }
 
     if (m->gregs[risu_XER] != a->gregs[risu_XER]) {
-        return 0;
+        if ((m->gregs[risu_XER] & xer_mask) == (a->gregs[risu_XER] & xer_mask)) {
+            a->gregs[risu_XER] = m->gregs[risu_XER];
+        } else {
+            return 0;
+        }
     }
 
     if (m->gregs[risu_LNK] - m->gregs[risu_NIP] != a->gregs[risu_LNK] - a->gregs[risu_NIP]) {
@@ -541,7 +559,11 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     }
 
     if (m->gregs[risu_MQ] != a->gregs[risu_MQ]) {
-        return 0;
+        if ((m->gregs[risu_MQ] & mq_mask) == (a->gregs[risu_MQ] & mq_mask)) {
+            a->gregs[risu_MQ] = m->gregs[risu_MQ];
+        } else {
+            return 0;
+        }
     }
 
     if (m->fpscr != a->fpscr) {
