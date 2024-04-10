@@ -709,6 +709,7 @@ int risu_main(int argc, char **argv)
     struct option *longopts;
     const char *shortopts;
     trace = false;
+    signal_count = 0;
 
     longopts = setup_options(&shortopts);
 
