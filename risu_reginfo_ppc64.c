@@ -504,13 +504,13 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     for (i = 0; i < 32; i++) {
         if (m->gregs[i] != a->gregs[i]) {
             if ((1 << (31-i)) & ~local_gregs_mask) {
-                /* a->gregs[i] = m->fpregs[i]; */
+                /* a->gregs[i] = m->gregs[i]; */
             } else if (
                 ((m->prev_insn & 0xfc1fffff) == 0x7c0802a6) && // mflr
                 rt == i &&
                 m->gregs[i] - m->gregs[risu_NIP] == a->gregs[i] - a->gregs[risu_NIP] // allow pc relative matching
             ) {
-                a->gregs[i] = m->fpregs[i];
+                a->gregs[i] = m->gregs[i];
             } else {
                 return 0;
             }
