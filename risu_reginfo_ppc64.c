@@ -1771,11 +1771,15 @@ static void reginfo_swap(struct reginfo *ri) {
 void reginfo_host_to_arch(struct reginfo *ri) {
 #if defined(RISU_DPPC)
     reginfo_swap(ri);
+#else
+    #pragma unused(ri)
 #endif
 }
 
 void reginfo_arch_to_host(struct reginfo *ri) {
 #if defined(RISU_DPPC)
     reginfo_swap(ri);
+#else
+    #pragma unused(ri)
 #endif
 }
