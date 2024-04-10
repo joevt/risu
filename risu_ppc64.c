@@ -81,7 +81,8 @@ arch_ptr_t get_pc(struct reginfo *ri)
 #endif
 }
 
-bool get_arch_big_endian() {
+bool get_arch_big_endian()
+{
 #if defined(RISU_DPPC) || defined(__BIG_ENDIAN__)
     return true;
 #else
