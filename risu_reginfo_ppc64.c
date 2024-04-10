@@ -338,6 +338,7 @@ void reginfo_init(struct reginfo *ri, void *vuc, void *siaddr)
 /* reginfo_update: update the context */
 void reginfo_update(struct reginfo *ri, void *vuc, void *siaddr)
 {
+    #pragma unused(siaddr)
 #if defined(RISU_DPPC)
     ppc_state.cr = ri->gregs[risu_CCR];
 #elif defined(__APPLE__)
