@@ -42,6 +42,7 @@ void advance_pc(void *vuc)
 
 arch_ptr_t get_uc_pc(void *vuc, void *siaddr)
 {
+    #pragma unused(siaddr)
 #if defined(RISU_DPPC)
     return ppc_state.pc;
 #elif defined(RISU_MACOS9)
