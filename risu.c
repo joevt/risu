@@ -47,7 +47,7 @@ arch_ptr_t arch_memblock;
 
 static int comm_fd;
 static bool trace;
-static size_t signal_count;
+size_t signal_count;
 static arch_ptr_t signal_pc;
 static bool is_setup = false;
 
