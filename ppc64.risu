@@ -4485,8 +4485,11 @@ ABSo PPC64LE 31:6 rt:5 ra:5 0:5 1:1 360:9 0:1 \
 ABSod PPC64LE 31:6 rt:5 ra:5 0:5 1:1 360:9 1:1 \
 !constraints { usable($rt, $ra); }
 
+# Rc = 1 is undefined.
 @ format:X, Fixed-Point, P0, MPC601, clcs # Cache Line Compute Size
 CLCS PPC64LE 31:6 rt:5 ra:5 0:5 531:10 0:1 \
+!constraints { usable($rt); }
+CLCSd PPC64LE 31:6 rt:5 ra:5 0:5 531:10 1:1 \
 !constraints { usable($rt); }
 
 @ format:XO, Fixed-Point, P0, MPC601, div # Divide
