@@ -52,6 +52,7 @@
 #       Storage_Control
 #       Time_Base
 #       Branch_History_Rolling_Buffer
+#       External_Control # v2.02 and v2.03
 #
 #     book:III          # In Skip group.
 #
@@ -64,6 +65,12 @@
 #       Debug
 #       Performance_Monitor
 #       Processor_Control
+#
+#     book:III-S        # In v2.03; In Skip group
+#       Storage_Control
+#
+#     book:III-E        # In v2.03; In Skip group
+#       Storage_Control
 #
 #   OpenPOWER Compliancy Subsets:   # Not a risu group
 #
@@ -4687,3 +4694,34 @@ SRQd PPC64LE 31:6 rs:5 ra:5 rb:5 664:10 1:1 \
 !constraints { usable($rs, $ra, $rb); }
 
 ###############################################################################
+# Instructions not in v3.1B and are not MPC601 specific instructions
+###############################################################################
+@ format:X, book:II, page:374, External_Control, v2.03, Skip, eciwx # External Control In Word Indexed (PPC Opt, PowerPC MPC601, 603, 604)
+ECIWX PPC64LE 31:6 rt:5 ra:5 rb:5 310:10 0:1
+
+@ format:X, book:II, page:374, External_Control, v2.03, Skip, ecowx # External Control Out Word Indexed (PPC Opt, PowerPC MPC601, 603, 604)
+ECOWX PPC64LE 31:6 rs:5 ra:5 rb:5 438:10 0:1
+
+@ format:X, book:I, page:87, Fixed-Point, v2.03, Skip, mcrxr # Move to Condition Register from XER
+MCRXR PPC64LE 31:6 crf:3 0:12 512:10 0:1
+
+@ format:X, book:III-S, page:432, Storage_Control, v2.03, Skip, mfsr # Move from Segment Register
+MFSR PPC64LE 31:6 rt:5 0:1 sr:4 0:5 595:10 0:1
+
+@ format:X, book:III-S, page:431, Storage_Control, v2.03, Skip, mtsr # Move to Segment Register
+MTSR PPC64LE 31:6 rs:5 0:1 sr:4 0:5 210:10 0:1
+
+@ format:X, book:III-S, page:432, Storage_Control, v2.03, Skip, mfsrin # Move from Segment Register Indirect
+MFSRIN PPC64LE 31:6 rs:5 0:1 sr:4 0:5 659:10 0:1
+
+@ format:X, book:III-E, page:532, Storage_Control, v2.03, PPC, Skip, dcbi # Data Cache Block Invalidate
+DCBI PPC64LE 31:6 0:5 ra:5 rb:5 470:10 0:1
+
+@ format:X, book:III-S, page:435, Storage_Control, v2.03, Not601, Skip, tlbia # TLB Invalidate All
+TLBIA PPC64LE 31:6 0:15 370:10 0:1
+
+@ format:X, Not601, Skip, tlbld # Load Data TLB Entry (603, G3, G4)
+TLBLD PPC64LE 31:6 0:5 0:5 rb:5 978:10 0:1
+
+@ format:X, Not601, Skip, tlbli # Load Instruction TLB Entry (603, G3, G4)
+TLBLI PPC64LE 31:6 0:5 0:5 rb:5 1010:10 0:1
