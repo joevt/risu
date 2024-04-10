@@ -90,7 +90,8 @@ bool get_arch_big_endian()
 #endif
 }
 
-uint32_t arch_to_host_32(uint32_t val) {
+uint32_t arch_to_host_32(uint32_t val)
+{
 #if (defined(RISU_DPPC) || defined(__BIG_ENDIAN__)) == defined(__BIG_ENDIAN__)
     return val;
 #else
