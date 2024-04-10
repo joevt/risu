@@ -555,9 +555,30 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
             if ((1 << (31-i)) & ~local_gregs_mask) {
                 /* a->gregs[i] = m->gregs[i]; */
             } else if (
-                ((m->prev_insn & 0xfc1fffff) == 0x7c0802a6) && // mflr
-                rt == i &&
-                m->gregs[i] - m->gregs[risu_NIP] == a->gregs[i] - a->gregs[risu_NIP] // allow pc relative matching
+                (
+                    ((m->prev_insn & 0xfc1fffff) == 0x7c0802a6) && // mflr
+                    rt == i &&
+                    m->gregs[i] - m->gregs[risu_NIP] == a->gregs[i] - a->gregs[risu_NIP] // allow pc relative matching
+                ) || (
+                    ((m->prev_insn & 0xfc0003fe) == 0x7c000296) && // div[o][.]
+                    rt == i &&
+                    (
+                        ra == rt || rb == rt || !m->gregs[rb] ||
+                        ((((int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                    )
+                ) || (
+                    ((m->prev_insn & 0xfc0003fe) == 0x7c0002d6) && // divs[o][.]
+                    rt == i &&
+                    (
+                        ra == rt || rb == rt || !m->gregs[rb] ||
+                        ((((int64_t(int32_t(m->gregs[ra])) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                    )
+                ) || (
+                    ((m->second_prev_insn & 0xfc0007fe) == 0x7c00022a) && // lscbx[.]
+                    (m->gregs[risu_XER] & 3) &&
+                    i == (((m->second_prev_insn >> 21) + ((m->gregs[risu_XER] & 0x7F) - 1) / 4) & 31) &&
+                    !(uint32_t(m->gregs[i] ^ a->gregs[i]) >> (32 - 8 * (m->gregs[risu_XER] & 3)))
+                )
             ) {
                 a->gregs[i] = m->gregs[i];
             } else {
@@ -598,6 +619,16 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
             mask = (mask & ~(15 << (28-bf))) | (((fpscr_mask >> (28-bfa)) & 15) << (28-bf));
             mask &= ccr_mask;
         }
+        else if (
+            ((m->prev_insn & 0xfc0003ff) == 0x7c000297) && // div[o].
+            (
+                ra == rt || rb == rt || !m->gregs[rb] ||
+                ((( (int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+            )
+        ) {
+            mask = 0x1fffffff;
+            mask &= ccr_mask;
+        }
         if (
             (m->gregs[risu_CCR] & mask) == (a->gregs[risu_CCR] & mask)
         ) {
@@ -608,7 +639,21 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
     }
 
     if (m->gregs[risu_MQ] != a->gregs[risu_MQ]) {
-        if ((m->gregs[risu_MQ] & mq_mask) == (a->gregs[risu_MQ] & mq_mask)) {
+        if (
+              (
+                  (m->gregs[risu_MQ] & mq_mask) == (a->gregs[risu_MQ] & mq_mask)
+              ) ||
+              (
+                  ((m->prev_insn & 0xfc0003fe) == 0x7c000296) && // div[o][.]
+                  (
+                      ra == rt || rb == rt || !m->gregs[rb] ||
+                      ((( (int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                  )
+              ) ||
+              (
+                  signal_count <= 1 // some test images don't set MQ so we'll let the first mismatch slide.
+              )
+        ) {
             a->gregs[risu_MQ] = m->gregs[risu_MQ];
         } else {
             return 0;
