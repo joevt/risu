@@ -14,13 +14,13 @@
 #include <sys/user.h>
 
 #include "risu.h"
-#ifdef DPPC
+#ifdef RISU_DPPC
     #include "ppcemu.h"
 #endif
 
 void advance_pc(void *vuc)
 {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     //We don't need to change the pc because ppctest-risu treats illegal ops as normal ops.
     //ppc_state.pc += 4;
 #elif defined(__APPLE__)
@@ -34,7 +34,7 @@ void advance_pc(void *vuc)
 
 arch_ptr_t get_uc_pc(void *vuc, void *siaddr)
 {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     return ppc_state.pc;
 #elif defined(__APPLE__)
     ucontext_t *uc = (ucontext_t *) vuc;
@@ -47,7 +47,7 @@ arch_ptr_t get_uc_pc(void *vuc, void *siaddr)
 
 void set_ucontext_paramreg(void *vuc, arch_ptr_t value)
 {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
     ppc_state.gpr[0] = (uint32_t)value;
 #elif defined(__APPLE__)
     ucontext_t *uc = vuc;
@@ -74,7 +74,7 @@ RisuOp get_risuop(struct reginfo *ri)
 
 arch_ptr_t get_pc(struct reginfo *ri)
 {
-#if defined(DPPC)
+#if defined(RISU_DPPC)
    return ppc_state.pc;
 #else
    return ri->nip;
@@ -82,7 +82,7 @@ arch_ptr_t get_pc(struct reginfo *ri)
 }
 
 bool get_arch_big_endian() {
-#if defined(DPPC) || defined(__BIG_ENDIAN__)
+#if defined(RISU_DPPC) || defined(__BIG_ENDIAN__)
     return true;
 #else
     return false;
@@ -90,14 +90,14 @@ bool get_arch_big_endian() {
 }
 
 uint32_t arch_to_host_32(uint32_t val) {
-#if (defined(DPPC) || defined(__BIG_ENDIAN__)) == defined(__BIG_ENDIAN__)
+#if (defined(RISU_DPPC) || defined(__BIG_ENDIAN__)) == defined(__BIG_ENDIAN__)
     return val;
 #else
     return BYTESWAP_32(val);
 #endif
 }
 
-#if defined(DPPC)
+#if defined(RISU_DPPC)
 void ppc_exception_handler_risu(Except_Type exception_type, uint32_t srr1_bits) {
     arch_siginfo_t si;
     memset(&si, 0, sizeof(si));
