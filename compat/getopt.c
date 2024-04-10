@@ -369,8 +369,11 @@ int _getopt_internal(int argc, char *const *argv, const char *optstring,
         } else if (optstring[0] == '+') {
             ordering = REQUIRE_ORDER;
             ++optstring;
-        } else if (getenv("POSIXLY_CORRECT") != NULL)
+        }
+#ifndef SKIP_GETENV
+        else if (getenv("POSIXLY_CORRECT") != NULL)
             ordering = REQUIRE_ORDER;
+#endif
         else
             ordering = PERMUTE;
     }
