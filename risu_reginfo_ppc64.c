@@ -651,19 +651,31 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
 
     if (m->gregs[risu_MQ] != a->gregs[risu_MQ]) {
         if (
-              (
-                  (m->gregs[risu_MQ] & mq_mask) == (a->gregs[risu_MQ] & mq_mask)
-              ) ||
-              (
-                  ((m->prev_insn & 0xfc0003fe) == 0x7c000296) && // div[o][.]
-                  (
-                      ra == rt || rb == rt || !m->gregs[rb] ||
-                      ((( (int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
-                  )
-              ) ||
-              (
-                  signal_count <= 1 // some test images don't set MQ so we'll let the first mismatch slide.
-              )
+            (
+                (m->gregs[risu_MQ] & mq_mask) == (a->gregs[risu_MQ] & mq_mask)
+            ) ||
+            (
+                ((m->prev_insn & 0xfc0003fe) == 0x7c000296) && /* div[o][.] */
+                (
+                    ra == rt || rb == rt || !m->gregs[rb] ||
+                    ((( (int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                )
+            ) ||
+            (
+                (cpu_opts & cpu_opt_use_601) &&
+                (
+                    ((m->prev_insn & 0xfc000000) == 0x1c000000) || /* mulli */
+                    ((m->prev_insn & 0xfc0003fe) == 0x7c0001d6) || /* mullw[o][.] */
+                    ((m->prev_insn & 0xfc0007fe) == 0x7c000096) || /* mulhw[.] */
+                    ((m->prev_insn & 0xfc0007fe) == 0x7c000016) || /* mulhwu[.] */
+                    ((m->prev_insn & 0xfc0003fe) == 0x7c0003d6) || /* divw[o][.] */
+                    ((m->prev_insn & 0xfc0003fe) == 0x7c000396) || /* divwu[o][.] */
+                    0
+                )
+            ) ||
+            (
+                signal_count <= 1 // some test images don't set MQ so we'll let the first mismatch slide.
+            )
         ) {
             a->gregs[risu_MQ] = m->gregs[risu_MQ];
         } else {
