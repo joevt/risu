@@ -86,6 +86,7 @@ enum {
 
 enum {
     cpu_opt_include_601 = 0x00000001,
+    cpu_opt_use_601     = 0x00000002,
 };
 
 static const struct option extra_opts[] = {
@@ -165,7 +166,7 @@ void arch_init(void)
 
     // Initialize virtual CPU and request MPC750 CPU aka G3.
     // Add include_601 for running on Mac OS 9 which emulates MPC601 instructions.
-    ppc_cpu_init(mem_ctrl, PPC_VER::MPC750, cpu_opts & cpu_opt_include_601, timebase_freq);
+    ppc_cpu_init(mem_ctrl, (cpu_opts & cpu_opt_use_601) ? PPC_VER::MPC601 : PPC_VER::MPC750, cpu_opts & cpu_opt_include_601, timebase_freq);
 
     mem_ctrl->add_ram_region(DPPC_RISU_RAM_START, DPPC_RISU_RAM_SIZE);
     mem_ctrl->add_rom_region(DPPC_RISU_ROM_START, (uint32_t)image_size);
