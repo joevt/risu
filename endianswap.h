@@ -28,7 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef ENDIAN_SWAP_H
 #define ENDIAN_SWAP_H
 
-#ifdef __GNUG__ /* GCC, ICC and Clang */
+#if defined(__GNUG__) || defined (__APPLE__) /* GCC, ICC and Clang */
 
 #   ifdef __APPLE__
 #       include <machine/endian.h>
