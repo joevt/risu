@@ -487,7 +487,8 @@ static void load_image(const char *imgfile)
         exit(EXIT_FAILURE);
     }
     read(fd, addr, image_size);
-    FlushCodeCacheRange(addr, image_size);
+    if (FlushCodeCacheRange)
+	    FlushCodeCacheRange(addr, image_size);
     __eieio();
     __sync();
     __isync();
