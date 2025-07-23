@@ -28,7 +28,7 @@
 #include <sys/user.h>
 #endif
 #include <float.h>
-#include <cinttypes>
+#include <inttypes.h>
 
 #ifdef RISU_DPPC
     #include "risu_reginfo_dppc.h"
@@ -575,20 +575,20 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
                     rt == i &&
                     (
                         ra == rt || rb == rt || !m->gregs[rb] ||
-                        ((((int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                        (((((int64_t)(((uint64_t)(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / (int32_t)(m->gregs[rb])) >> 31) + 1) & ~1)
                     )
                 ) || (
                     ((m->prev_insn & 0xfc0003fe) == 0x7c0002d6) && // divs[o][.]
                     rt == i &&
                     (
                         ra == rt || rb == rt || !m->gregs[rb] ||
-                        ((((int64_t(int32_t(m->gregs[ra])) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                        (((((int64_t)((int32_t)(m->gregs[ra])) / (int32_t)(m->gregs[rb])) >> 31) + 1) & ~1)
                     )
                 ) || (
                     ((m->second_prev_insn & 0xfc0007fe) == 0x7c00022a) && // lscbx[.]
                     (m->gregs[risu_XER] & 3) &&
                     i == (((m->second_prev_insn >> 21) + ((m->gregs[risu_XER] & 0x7F) - 1) / 4) & 31) &&
-                    !(uint32_t(m->gregs[i] ^ a->gregs[i]) >> (32 - 8 * (m->gregs[risu_XER] & 3)))
+                    !((uint32_t)(m->gregs[i] ^ a->gregs[i]) >> (32 - 8 * (m->gregs[risu_XER] & 3)))
                 )
             ) {
                 a->gregs[i] = m->gregs[i];
@@ -634,7 +634,7 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
             ((m->prev_insn & 0xfc0003ff) == 0x7c000297) && // div[o].
             (
                 ra == rt || rb == rt || !m->gregs[rb] ||
-                ((( (int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                ((( ((int64_t)(((uint64_t)(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / (int32_t)(m->gregs[rb])) >> 31) + 1) & ~1)
             )
         ) {
             mask = 0x1fffffff;
@@ -658,7 +658,7 @@ int reginfo_is_eq(struct reginfo *m, struct reginfo *a)
                 ((m->prev_insn & 0xfc0003fe) == 0x7c000296) && /* div[o][.] */
                 (
                     ra == rt || rb == rt || !m->gregs[rb] ||
-                    ((( (int64_t((uint64_t(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / int32_t(m->gregs[rb])) >> 31) + 1) & ~1)
+                    ((( ((int64_t)(((uint64_t)(m->gregs[ra]) << 32) | m->gregs[risu_MQ]) / (int32_t)(m->gregs[rb])) >> 31) + 1) & ~1)
                 )
             ) ||
             (

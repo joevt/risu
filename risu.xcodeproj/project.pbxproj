@@ -10,6 +10,7 @@
 		634579C42B33A6E700AB1D07 /* risu_reginfo_ppc64.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A602B29751B00E71775 /* risu_reginfo_ppc64.c */; };
 		634579C52B33A6EB00AB1D07 /* risu_ppc64.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A622B29751B00E71775 /* risu_ppc64.c */; };
 		6376A9B62B2B210A00E760F5 /* getopt.c in Sources */ = {isa = PBXBuildFile; fileRef = 6376A9B42B2B210A00E760F5 /* getopt.c */; };
+		637727B52E30CBAA00DA61EA /* risu_main.c in Sources */ = {isa = PBXBuildFile; fileRef = 637727B42E30CBAA00DA61EA /* risu_main.c */; };
 		63802A652B29751B00E71775 /* risu.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A5F2B29751B00E71775 /* risu.c */; };
 		63802A6A2B29751B00E71775 /* comms.c in Sources */ = {isa = PBXBuildFile; fileRef = 63802A642B29751B00E71775 /* comms.c */; };
 /* End PBXBuildFile section */
@@ -29,6 +30,8 @@
 /* Begin PBXFileReference section */
 		6376A9B42B2B210A00E760F5 /* getopt.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = getopt.c; path = compat/getopt.c; sourceTree = "<group>"; };
 		6376A9B52B2B210A00E760F5 /* getopt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = getopt.h; path = compat/getopt.h; sourceTree = "<group>"; };
+		637727A02E30C6A700DA61EA /* endianswap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = endianswap.h; sourceTree = "<group>"; };
+		637727B42E30CBAA00DA61EA /* risu_main.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = risu_main.c; sourceTree = "<group>"; };
 		63802A5B2B29751B00E71775 /* risu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = risu.h; sourceTree = SOURCE_ROOT; };
 		63802A5C2B29751B00E71775 /* risu_reginfo_ppc64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = risu_reginfo_ppc64.h; sourceTree = SOURCE_ROOT; };
 		63802A5E2B29751B00E71775 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = build/ppc/config.h; sourceTree = "<group>"; };
@@ -67,7 +70,9 @@
 				63802A5B2B29751B00E71775 /* risu.h */,
 				63802A5C2B29751B00E71775 /* risu_reginfo_ppc64.h */,
 				63802A5E2B29751B00E71775 /* config.h */,
+				637727A02E30C6A700DA61EA /* endianswap.h */,
 				63802A5F2B29751B00E71775 /* risu.c */,
+				637727B42E30CBAA00DA61EA /* risu_main.c */,
 				63802A602B29751B00E71775 /* risu_reginfo_ppc64.c */,
 				63802A622B29751B00E71775 /* risu_ppc64.c */,
 				63802A642B29751B00E71775 /* comms.c */,
@@ -146,6 +151,7 @@
 				6376A9B62B2B210A00E760F5 /* getopt.c in Sources */,
 				634579C42B33A6E700AB1D07 /* risu_reginfo_ppc64.c in Sources */,
 				634579C52B33A6EB00AB1D07 /* risu_ppc64.c in Sources */,
+				637727B52E30CBAA00DA61EA /* risu_main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

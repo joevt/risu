@@ -184,7 +184,7 @@ RisuResult send_data_pkt(int sock, void *pkt, int pktlen)
      */
     uint32_t net_pktlen = htonl(pktlen);
     struct iovec iov[2];
-    iov[0].iov_base = &net_pktlen;
+    iov[0].iov_base = (char	*)&net_pktlen;
     iov[0].iov_len = sizeof(net_pktlen);
     iov[1].iov_base = pkt;
     iov[1].iov_len = pktlen;

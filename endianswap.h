@@ -28,7 +28,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef ENDIAN_SWAP_H
 #define ENDIAN_SWAP_H
 
-#if defined(__GNUG__) || defined (__APPLE__) /* GCC, ICC and Clang */
+#if defined(__GNUC__)
+    #define GCC_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+
+#if defined(__GNUC__) && (GCC_VERSION > 40800) /* GCC, ICC and Clang */
+    // Should probable use configure scripts to determine
+    // if a feature exists in the compiler.
 
 #   ifdef __APPLE__
 #       include <machine/endian.h>

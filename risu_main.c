@@ -33,7 +33,8 @@ char * argcargv(char ***dargv, int *dargc, char *buf)
     char** argv;
     char *s;
     char *d;
-    for (int p = 0; p <= (dargv != NULL); p++) {
+    int p;
+    for (p = 0; p <= (dargv != NULL); p++) {
         if (p) {
             argv = (char**)calloc(argc, sizeof(char*));
             if (dargv) *dargv = argv;
