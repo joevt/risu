@@ -33,6 +33,7 @@
 #ifdef RISU_DPPC
     #include "risu_reginfo_dppc.h"
     #include "../../ppcemu.h"
+    #include <debugger/debugger.h>
     enum {
         DPPC_RISU_ROM_START = 0xf0000000,
         DPPC_RISU_RAM_START = 0xb0000000,
@@ -185,7 +186,11 @@ void do_image()
         stack_bytes[i] = i;
 
     power_on = true;
+#if 0
+    DppcDebugger::get_instance()->enter_debugger();
+#else
     ppc_exec();
+#endif
 #elif defined(RISU_MACOS9)
     uint8_t stack_bytes[32768];
     for (i = 0; i < sizeof(stack_bytes); i++)
